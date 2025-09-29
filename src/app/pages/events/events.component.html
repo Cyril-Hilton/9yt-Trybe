@@ -1,0 +1,36 @@
+<div class="events-page">
+  <div class="panel">
+    <h2>Upcoming Events</h2>
+    <div class="event-grid">
+      <div class="event-card" *ngFor="let event of upcomingEvents">
+        <img [src]="event.flyer" alt="{{event.name}}">
+        <h3>{{event.name}}</h3>
+        <p>{{event.summary}}</p>
+        <p class="date">{{event.date}}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top: 20px;">
+    <h2>Previous Events</h2>
+    <div class="event-grid">
+      <div class="event-card" *ngFor="let event of previousEvents">
+        <img [src]="event.flyer" alt="{{event.name}}">
+        <h3>{{event.name}}</h3>
+        <p>{{event.summary}}</p>
+        <p class="date">{{event.date}}</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="panel" style="margin-top: 20px;">
+    <h2>Find by Date</h2>
+    <app-calendar (dateSelected)="onDateSelected($event)"></app-calendar>
+    <div class="selected-events" *ngIf="selectedEvents.length > 0">
+      <h3>Events on Selected Date:</h3>
+      <ul>
+        <li *ngFor="let event of selectedEvents">{{event.name}} - {{event.summary}}</li>
+      </ul>
+    </div>
+  </div>
+</div>

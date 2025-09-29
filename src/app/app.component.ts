@@ -7,4 +7,10 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = '9yt-trybe';
+  isSearchVisible = false;
+  isChatVisible = false;
 }
+
+
+
+

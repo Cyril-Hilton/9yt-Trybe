@@ -1,0 +1,19 @@
+<div class="calendar-container">
+  <div class="calendar-header">
+    <button (click)="changeMonth(-1)">&#9664;</button>
+    <div class="current-month">{{ currentMonthName }} {{ currentYear }}</div>
+    <button (click)="changeMonth(1)">&#9654;</button>
+  </div>
+  <div class="calendar-days-of-week">
+    <div *ngFor="let day of dayNames">{{day}}</div>
+  </div>
+  <div class="calendar-grid">
+    <div class="calendar-day" 
+         [class.empty]="day === null" 
+         [class.has-event]="hasEvent(day)"
+         *ngFor="let day of calendarDays"
+         (click)="selectDate(day)">
+      {{day}}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,55 @@
+<div class="jobs-page panel">
+  <h2>Add Your Work Portfolio</h2>
+  <p>This is our way to assist you reach more customers. Fill the form below to get started.</p>
+  
+  <form [formGroup]="jobForm" (ngSubmit)="addJob()">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="firstName">First Name</label>
+        <input id="firstName" type="text" formControlName="firstName">
+      </div>
+      <div class="form-group">
+        <label for="lastName">Last Name</label>
+        <input id="lastName" type="text" formControlName="lastName">
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="middleName">Middle Name (Optional)</label>
+      <input id="middleName" type="text" formControlName="middleName">
+    </div>
+    <div class="form-group">
+      <label for="title">Title</label>
+      <input id="title" type="text" formControlName="title">
+    </div>
+    <div class="form-group">
+      <label for="jobType">Job Type</label>
+      <select id="jobType" formControlName="jobType">
+        <option value="">Select a Job Type</option>
+        <option *ngFor="let type of jobTypes" [value]="type">{{type}}</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="portfolioLink">Portfolio / Social Media Link</label>
+      <input id="portfolioLink" type="url" formControlName="portfolioLink">
+    </div>
+    <div class="form-group">
+      <label for="pic">Profile Picture</label>
+      <input id="pic" type="url" formControlName="pic">
+    </div>
+    
+    <button type="submit" [disabled]="jobForm.invalid">Add My Profile</button>
+  </form>
+
+  <hr>
+  
+  <h3>Our Community of Professionals</h3>
+  <div class="professional-grid">
+    <div class="pro-card" *ngFor="let pro of professionals">
+      <img [src]="pro.pic" alt="{{pro.name}}">
+      <h3>{{pro.name}}</h3>
+      <p>{{pro.title}}</p>
+      <p class="job-type">{{pro.jobType}}</p>
+      <a [href]="pro.portfolioLink" target="_blank" class="portfolio-link">View Portfolio</a>
+    </div>
+  </div>
+</div>

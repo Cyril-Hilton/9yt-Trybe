@@ -1,0 +1,524 @@
+// --- Existing Styles ---
+.landing-page {
+    position: relative;
+    min-height: 100vh;
+    padding-top: 80px;
+    overflow: hidden;
+    background-color: var(--hero-bg);
+}
+
+.background-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--headingFont);
+    font-size: clamp(4rem, 10vw, 15rem);
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.03);
+    z-index: 1;
+    white-space: nowrap;
+    animation: pulse 16s infinite ease-in-out;
+    text-align: center;
+    width: 100%;
+}
+
+.content-overlay {
+    position: relative;
+    overflow:visible;
+
+    .content-background-video {
+        position: absolute;
+        top: 1%;
+        width: 200vw; /* This is the key */
+        height: 153vh; /* This is the key */
+        transform: translate(-50%, -50%);
+        /* Centering the video */
+        z-index: -1;
+        object-fit: cover;
+        /* Ensures video fills container while maintaining aspect ratio */
+    }
+
+    .landing-content {
+        h1 {
+            font-size: clamp(2rem, 5vw, 4rem);
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 20px;
+            line-height: 1.2;
+            animation: text-glow-in 2s forwards, subtle-shift 4s infinite ease-in-out;
+        }
+    }
+
+
+
+    .slider-container,
+    .calendar-section,
+    .button-section {
+        margin: 40px 0;
+        animation: fadeIn 1s ease-out;
+        /* Centering button content for "Shop From Us" and "Publish Your Own Event" */
+        text-align: center;
+
+        h3 {
+            margin-left: 20px;
+            text-align: left;
+
+            @media (max-width: 768px) {
+                margin-left: 10px;
+            }
+        }
+    }
+
+    .slider-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0 20px;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .event-slider {
+        display: flex;
+        gap: 20px;
+        padding: 20px 0;
+        margin: auto;
+    }
+
+    .event-card {
+        flex-shrink: 0;
+        width: clamp(250px, 30vw, 350px);
+        position: relative;
+        scroll-snap-align: start;
+        transition: transform 0.3s ease;
+
+        &:hover {
+            transform: scale(1.03);
+        }
+    }
+
+    .event-card img {
+        width: 100%;
+        height: clamp(300px, 40vw, 450px);
+        object-fit: cover;
+        border-radius: 8px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .event-info {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(5px);
+        padding: 10px;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+        text-align: center;
+
+        h4 {
+            margin: 0;
+            color: var(--text);
+        }
+
+        p {
+            margin: 0;
+            font-size: 12px;
+            color: var(--muted);
+        }
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        max-width: 500px;
+        margin: 20px auto;
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        input,
+        textarea,
+        select {
+            background: var(--card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text);
+            padding: 12px;
+            border-radius: 4px;
+
+            &:focus {
+                outline: none;
+                border-color: var(--accent);
+            }
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            input {
+                width: auto;
+            }
+        }
+
+        button {
+            background: var(--accent);
+            color: var(--accent-contrast);
+            border: none;
+            padding: 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+
+            /* Using SASS function lighten based on global SCSS for hover effect */
+            &:hover {
+                background-color: lighten(#4B5563, 10%);
+            }
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        }
+    }
+
+    @keyframes text-glow-in {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+            text-shadow: 0 0 20px var(--text), 0 0 40px rgba(255, 255, 255, 0.5);
+        }
+    }
+
+    @keyframes subtle-shift {
+        0% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-5px);
+        }
+
+        100% {
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    // --- NEW NEWS CAROUSEL STYLES ---
+
+    .section-title {
+        text-align: center;
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 30px;
+        /* Silvermoon accent color */
+        color: var(--text);
+        text-shadow: 0 0 10px rgba(176, 181, 189, 0.4);
+    }
+
+    .news-section {
+        padding: 60px 0;
+        margin-top: 40px;
+    }
+
+    .carousel-wrapper {
+        position: relative;
+        max-width: 1200px;
+        margin: 0 auto;
+        overflow: hidden;
+        padding: 0 50px;
+        /* Space for arrows */
+    }
+
+    .news-carousel {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .news-grid {
+        /* Set to show 4 items in a row (using grid for alignment) */
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .news-item {
+        background: var(--secondary-color, #2c2c2c);
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        /* Added opacity transition for shuffle/disappear effect */
+        transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease;
+        cursor: pointer;
+
+        &:hover {
+            transform: translateY(-5px);
+            /* Silvermoon shadow on hover */
+            box-shadow: 0 10px 25px rgba(176, 181, 189, 0.3);
+        }
+    }
+
+    .news-image {
+        width: 100%;
+        /* Image is optimized to look like a magazine cover */
+        height: 80%;
+        object-fit: cover;
+        display: block;
+        aspect-ratio: 4/5;
+    }
+
+    .news-content {
+        /* Content takes the remaining vertical space */
+        padding: 10px;
+        height: 20%;
+    }
+
+    /* Carousel Arrows Styling (Custom Look) */
+    .nav-arrow {
+        /* Silvermoon/Accent colors */
+        background: rgba(176, 181, 189, 0.1);
+        color: var(--text);
+        border: 2px solid var(--text);
+        border-radius: 50%;
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        transition: all 0.3s ease;
+        font-size: 1.2rem;
+        box-shadow: 0 0 10px rgba(176, 181, 189, 0.3);
+
+        &:hover {
+            /* Inverted silvermoon on hover */
+            background: var(--text);
+            color: var(--bg);
+            transform: translateY(-50%) scale(1.1);
+        }
+    }
+
+    .left-arrow {
+        left: 0;
+    }
+
+    .right-arrow {
+        right: 0;
+    }
+
+
+    /* Explore Galleries Button - ENHANCED STYLING (Nicer and centered) */
+    .gallery-button-container {
+        text-align: center;
+        margin-top: 60px;
+        padding-bottom: 40px;
+    }
+
+    .explore-button {
+        /* Gradient using Accent color (#4B5563) and its lighter shade */
+        background: linear-gradient(90deg, var(--accent) 0%, lighten(#4B5563, 10%) 100%);
+        color: var(--accent-contrast);
+        padding: 15px 35px;
+        /* Slightly larger padding */
+        border: none;
+        border-radius: 9999px;
+        /* Pill shape for a "nicer" look */
+        font-weight: 700;
+        font-size: 1.15rem;
+        /* Slightly larger font */
+        cursor: pointer;
+        /* Silvermoon shadow */
+        box-shadow: 0 6px 20px rgba(176, 181, 189, 0.3), 0 0 40px rgba(176, 181, 189, 0.1);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: inline-flex;
+        align-items: center;
+
+        &:hover {
+            transform: translateY(-4px) scale(1.02);
+            /* More lift on hover */
+            /* Stronger silvermoon shadow on hover */
+            box-shadow: 0 10px 30px rgba(176, 181, 189, 0.5), 0 0 50px rgba(176, 181, 189, 0.2);
+        }
+
+        i {
+            transition: transform 0.3s ease;
+        }
+
+        &:hover i {
+            transform: translateX(8px);
+        }
+    }
+
+    .explore-button2 {
+        /* Gradient using Accent color (#4B5563) and its lighter shade */
+        background: linear-gradient(90deg, var(--accent) 0%, lighten(#4B5563, 10%) 100%);
+        color: var(--accent-contrast);
+        padding: 10px 25px;
+        /* Slightly larger padding */
+        border: none;
+        border-radius: 9999px;
+        /* Pill shape for a "nicer" look */
+        font-weight: 700;
+        font-size: 1rem;
+        /* Slightly larger font */
+        cursor: pointer;
+        margin-left: 15px;
+        margin-top: 10%;
+        /* Silvermoon shadow */
+        box-shadow: 0 4px 8px rgba(176, 181, 189, 0.3), 0 0 20px rgba(176, 181, 189, 0.1);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: inline-flex;
+        align-items: center;
+
+        &:hover {
+            transform: translateY(-4px) scale(1.02);
+            /* More lift on hover */
+            /* Stronger silvermoon shadow on hover */
+            box-shadow: 0 10px 30px rgba(176, 181, 189, 0.5), 0 0 50px rgba(176, 181, 189, 0.2);
+        }
+
+        i {
+            transition: transform 0.3s ease;
+        }
+
+        &:hover i {
+            transform: translateX(8px);
+        }
+    }
+
+
+    /* NEW STYLES: Gallery Tabs (Centered, nice colors, spacing, and alignment) */
+    .gallery-tabs {
+        display: flex;
+        justify-content: center;
+        /* Center the tabs horizontally */
+        gap: 30px;
+        /* Nice spacing between tabs */
+        margin: 40px auto;
+        padding: 10px 0;
+        max-width: 800px;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+
+        @media (max-width: 600px) {
+            gap: 15px;
+            overflow-x: auto;
+            justify-content: flex-start;
+            /* Allow scroll on small screens */
+        }
+
+        .tab-item {
+            padding: 10px 20px;
+            color: var(--muted);
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s ease, transform 0.2s ease;
+            white-space: nowrap;
+
+            &:hover {
+                color: var(--text);
+                /* Silvermoon color on hover */
+                transform: translateY(-2px);
+            }
+
+            &.active {
+                color: var(--text);
+                /* Silvermoon color when active */
+            }
+
+            &.active::after {
+                content: '';
+                position: absolute;
+                bottom: -12px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 100%;
+                height: 3px;
+                /* Silvermoon color for active indicator */
+                background: var(--text);
+                border-radius: 2px;
+            }
+        }
+    }
+
+
+    /* Mobile Responsiveness */
+    @media (max-width: 1024px) {
+        .news-grid {
+            grid-template-columns: repeat(2, 1fr);
+            /* Show 2 items on tablet */
+        }
+
+        .carousel-wrapper {
+            padding: 0 30px;
+        }
+
+        .nav-arrow {
+            width: 35px;
+            height: 35px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .news-grid {
+            grid-template-columns: 1fr;
+            /* Show 1 item on mobile */
+        }
+
+        .carousel-wrapper {
+            padding: 0 15px;
+        }
+
+        .nav-arrow {
+            width: 30px;
+            height: 30px;
+            font-size: 1rem;
+        }
+
+        .left-arrow {
+            left: 0;
+        }
+
+        .right-arrow {
+            right: 0;
+        }
+    }
+}

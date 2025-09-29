@@ -1,0 +1,29 @@
+<nav>
+    <ul [class.active]="isNavOpen">
+        <li><a routerLink="/" (click)="toggleNav()">
+                <i class="fas fa-home"></i> Home
+            </a></li>
+        <li><a routerLink="/events" (click)="toggleNav()">
+                <i class="fas fa-calendar-alt"></i> Events
+            </a></li>
+        <li><a routerLink="/gallery" (click)="toggleNav()">
+                <i class="fas fa-image"></i> Gallery
+            </a></li>
+        <li><a routerLink="/team" (click)="toggleNav()">
+                <i class="fas fa-users"></i> Team
+            </a></li>
+        <li><a routerLink="/shop" (click)="toggleNav()">
+                <i class="fas fa-shopping-cart"></i> Shop
+            </a></li>
+        <li><a routerLink="/jobs" (click)="toggleNav()">
+                <i class="fas fa-briefcase"></i> Jobs
+            </a></li>
+        <li><a routerLink="/about-us" (click)="toggleNav()">
+                <i class="fas fa-info-circle"></i> About Us</a></li>
+        <li><a routerLink="/contact-us" (click)="toggleNav()">
+                <i class="fas fa-envelope"></i> Contact Us</a></li>
+    </ul>
+    <button class="nav-toggle" (click)="toggleNav()">
+        <i class="fas" [ngClass]="{'fa-bars': !isNavOpen, 'fa-times': isNavOpen}"></i>
+    </button>
+</nav>

@@ -1,0 +1,205 @@
+@import 'src/styles.scss';
+
+.shop-page {
+  margin-top: 10%;
+  padding: 0 40px; /* Default desktop padding */
+
+  /* Tablet and Mobile adjustments */
+  @media (max-width: 768px) {
+    margin-top: 15%; /* Push content down further for smaller screens */
+    padding: 0 20px; /* Reduce side padding on tablets */
+  }
+
+  @media (max-width: 480px) {
+    padding: 0 10px; /* Minimal side padding on phones */
+    overflow-x: hidden; /* ADDED: Prevents horizontal scrolling on small screens */
+  }
+
+  .panel {
+    margin-bottom: 20px;
+    padding: 20px;
+
+    @media (max-width: 480px) {
+      padding: 15px;
+    }
+  }
+}
+
+.product-grid {
+  /* This is already responsive, but we can fine-tune the minimum size on mobile */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+
+  @media (max-width: 600px) {
+    /* Allow cards to collapse to a smaller size on small phones */
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+  }
+}
+
+.product-card {
+  background: var(--card);
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  @media (max-width: 480px) {
+    padding: 10px;
+  }
+  
+  img {
+    width: 100%;
+    height: 250px;
+    object-fit: contain;
+    border-radius: 4px;
+    
+    @media (max-width: 480px) {
+      height: 150px; /* Smaller image height on mobile */
+    }
+  }
+  
+  h3 { 
+    color: var(--text); 
+    font-size: 1.1rem;
+    @media (max-width: 480px) {
+      font-size: 1rem;
+    }
+  }
+  
+  p { 
+    font-size: 16px; 
+    color: var(--muted); 
+    @media (max-width: 480px) {
+      font-size: 0.9rem;
+    }
+  }
+  
+  button {
+    width: 100%;
+    margin-top: 15px;
+    transition: background-color 0.3s ease;
+  }
+  
+  &:hover {
+    transform: translateY(-5px);
+    @include glow-effect;
+  }
+}
+
+.cart-item {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 15px;
+
+  /* Mobile Layout for Cart Item: Stack elements vertically */
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+  }
+
+  .item-details {
+    /* Flex grow on desktop, full width on mobile */
+    flex-grow: 1; 
+
+    @media (max-width: 600px) {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  }
+
+  h4 { 
+    margin: 0; 
+    font-size: 1.1rem;
+    @media (max-width: 600px) {
+      font-size: 1rem;
+    }
+  }
+  
+  p { 
+    margin: 0; 
+    font-size: 0.95rem;
+    @media (max-width: 600px) {
+      font-size: 0.85rem;
+    }
+  }
+
+  .quantity-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    @media (max-width: 600px) {
+      margin-top: 5px; /* Add space between details and controls on mobile */
+    }
+
+    input {
+      width: 40px; /* Slightly smaller input on mobile */
+      padding: 8px; 
+      text-align: center;
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      border-radius: 4px;
+    }
+    
+    button {
+      background: var(--accent);
+      border: none;
+      color: var(--accent-contrast);
+      width: 25px; /* Smaller buttons on mobile */
+      height: 25px;
+      border-radius: 4px;
+    }
+  }
+}
+
+.total-price {
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: right;
+  margin-top: 20px;
+  
+  @media (max-width: 600px) {
+    font-size: 1.1rem;
+    text-align: center; /* Center total price on small screens */
+  }
+}
+
+.billing-form {
+  margin-top: 30px;
+  
+  .form-group {
+    margin-bottom: 15px;
+  }
+  
+  input {
+    width: 100%;
+    padding: 12px;
+    background: var(--card);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text);
+    border-radius: 4px;
+    
+    @media (max-width: 480px) {
+      padding: 10px; /* Reduce padding on small inputs */
+    }
+  }
+  
+  .btn {
+    width: 100%;
+  }
+}

@@ -1,0 +1,57 @@
+<div class="shop-page">
+  <div class="panel">
+    <h2>Shop Our Merch</h2>
+    <div class="product-grid">
+      <div class="product-card" *ngFor="let item of products">
+        <img [src]="item.image" alt="{{item.name}}">
+        <h3>{{item.name}}</h3>
+        <p>GHC {{item.price}}</p>
+        <button class="btn" (click)="addToCart(item)">Add to Cart</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top: 20px;">
+    <h2>Your Cart</h2>
+    <div *ngIf="cart.length === 0">
+      <p>Your cart is empty.</p>
+    </div>
+    <div *ngIf="cart.length > 0">
+      <div class="cart-item" *ngFor="let item of cart">
+        <img [src]="item.image" alt="{{item.name}}">
+        <div>
+          <h4>{{item.name}}</h4>
+          <p>GHC {{item.price}}</p>
+          <div class="quantity-control">
+            <button (click)="updateQuantity(item.id, item.quantity - 1)">-</button>
+            <input type="number" [(ngModel)]="item.quantity" (change)="updateQuantity(item.id, item.quantity)" min="0">
+            <button (click)="updateQuantity(item.id, item.quantity + 1)">+</button>
+          </div>
+        </div>
+      </div>
+      <hr>
+      <p class="total-price">Total: GHC {{totalPrice()}}</p>
+
+      <form [formGroup]="billingForm" (ngSubmit)="checkout()" class="billing-form">
+        <h3>Billing & Shipping</h3>
+        <div class="form-group">
+          <label for="fullName">Full Name</label>
+          <input id="fullName" formControlName="fullName" placeholder="Full Name">
+        </div>
+        <div class="form-group">
+          <label for="address">Shipping Address</label>
+          <input id="address" formControlName="address" placeholder="e.g., House No. 123, Street, City">
+        </div>
+        <div class="form-group">
+          <label for="mobileMoney">Mobile Money Number</label>
+          <input id="mobileMoney" formControlName="mobileMoney" placeholder="e.g., 0541234567">
+        </div>
+        <div class="form-group">
+          <label for="card">Card Number</label>
+          <input id="card" formControlName="card" placeholder="e.g., 1234-5678-9101-1213">
+        </div>
+        <button type="submit" [disabled]="billingForm.invalid" class="btn">Proceed to Payment</button>
+      </form>
+    </div>
+  </div>
+</div>

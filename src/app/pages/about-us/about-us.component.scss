@@ -1,0 +1,29 @@
+.about-us-page {
+  padding: 40px;
+  margin-top: 7%;
+  h2 { font-family: var(--headingFont); }
+  p { font-size: 1.1rem; line-height: 1.6; }
+  
+  .leadership-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 30px;
+    margin-top: 30px;
+  }
+  .team-member-card {
+    text-align: center;
+    img {
+      width: 150px;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 3px solid var(--accent);
+      transition: transform 0.3s ease;
+      &:hover {
+        transform: scale(1.05);
+      }
+    }
+    h4 { margin-top: 15px; }
+    p { font-size: 0.9rem; color: var(--muted); }
+  }
+}

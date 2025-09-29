@@ -1,0 +1,19 @@
+<div class="chatbot-overlay" [class.active]="isVisible">
+    <div class="chatbot-header">
+        <h4>Chat with !Trybe Bot</h4>
+        <button class="close-btn" (click)="closeChat()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="chat-history">
+        <div *ngFor="let msg of messages" class="message-bubble" [class.user-message]="msg.isUser" [class.bot-message]="!msg.isUser">
+            {{ msg.text }}
+        </div>
+    </div>
+    <form class="chat-input-container" (ngSubmit)="sendMessage()">
+        <input type="text" [(ngModel)]="currentMessage" name="message" placeholder="Type a message..." required>
+        <button type="submit" [disabled]="!currentMessage.trim()">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </form>
+</div>

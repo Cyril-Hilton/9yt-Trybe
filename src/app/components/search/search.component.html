@@ -1,0 +1,17 @@
+<div class="search-overlay" [class.active]="isVisible">
+    <div class="search-container">
+        <button class="close-btn" (click)="closeSearch()">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="search-wrapper">
+            <input type="text" [(ngModel)]="searchQuery" (keyup.enter)="onSearch()" placeholder="Search for events, articles, jobs...">
+            <button (click)="onSearch()"><i class="fas fa-search"></i></button>
+        </div>
+        <div *ngIf="searchResults.length > 0" class="search-results">
+            <a *ngFor="let result of searchResults" [href]="result.url" class="result-item">
+                <h4>{{ result.title }}</h4>
+                <p>{{ result.snippet }}</p>
+            </a>
+        </div>
+    </div>
+</div>

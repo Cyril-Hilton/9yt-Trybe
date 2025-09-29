@@ -1,0 +1,63 @@
+  <div class="gallery-page-wrapper">
+      <div class="gallery-header">
+        <h1 class="text-5xl font-extrabold mb-2">Our Galleries</h1>
+        <p class="text-lg text-gray-400">Relive the best moments from our incredible events!</p>
+      </div>
+
+      <!-- Event Tabs Container (Centered) -->
+      <div class="event-tabs-container">
+        <div class="event-tabs">
+          <!-- Tab Buttons (Using *ngFor for Angular 15 compatibility) -->
+          <button 
+            *ngFor="let event of events; trackBy: trackById"
+            [class.active]="activeEventId === event.id"
+            (click)="setActiveEvent(event.id)"
+            class="tab-button"
+          >
+            {{ event.name }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Image Grid Container -->
+      <div class="image-grid-container">
+        <div class="image-grid">
+          <!-- Image grid (Using *ngFor for Angular 15 compatibility) -->
+          <div *ngFor="let image of paginatedImages; let i = index" class="image-item">
+            <!-- Image with fallback -->
+            <img [src]="image" alt="{{activeEvent?.name}} Image" loading="lazy" 
+                 onerror="this.onerror=null; this.src='assets/gallery/code 51/magazine image 1.jpg';" 
+                 class="rounded-lg shadow-xl transition-transform duration-300 hover:scale-[1.02] object-cover">
+          </div>
+        </div>
+
+        <!-- No Images Message (Using *ngIf for Angular 15 compatibility) -->
+        <div *ngIf="paginatedImages.length === 0" class="no-images">
+          <i class="fas fa-camera-retro text-7xl mb-4 opacity-70"></i>
+          <p>No moments captured for <strong>{{ activeEvent?.name }}</strong> yet. Check back soon!</p>
+        </div>
+      </div>
+
+      <!-- Pagination Controls (Centered) -->
+      <div class="pagination-controls">
+        <button 
+          (click)="prevPage()" 
+          [disabled]="currentPage === 1"
+          class="page-button"
+        >
+          <i class="fas fa-chevron-left mr-2"></i> Previous
+        </button>
+
+        <span class="page-info">
+          Page {{ currentPage }} of {{ totalPages }}
+        </span>
+
+        <button 
+          (click)="nextPage()" 
+          [disabled]="currentPage === totalPages || totalPages === 0"
+          class="page-button"
+        >
+          Next <i class="fas fa-chevron-right ml-2"></i>
+        </button>
+      </div>
+    </div>

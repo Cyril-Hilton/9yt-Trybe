@@ -1,0 +1,120 @@
+@import 'src/styles.scss';
+
+.jobs-page {
+
+    margin-top: 10%;
+
+    h2,
+    h3 {
+        font-family: var(--headingFont);
+    }
+
+    p {
+        margin-bottom: 20px;
+    }
+
+    form {
+        max-width: 600px;
+        margin: 20px auto;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 15px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+        flex: 1;
+    }
+
+    label {
+        display: block;
+        font-size: 14px;
+        color: var(--text);
+        margin-bottom: 5px;
+    }
+
+    input,
+    select {
+        width: 95%;
+        padding: 12px;
+        background: var(--card);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text);
+        border-radius: 4px;
+
+        &:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+    }
+
+    button {
+        width: 100%;
+        padding: 15px;
+        background: var(--accent);
+        color: var(--accent-contrast);
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+
+        &:hover {
+            background-color: lighten(#4B5563, 10%);
+        }
+    }
+
+    hr {
+        border-color: rgba(255, 255, 255, 0.1);
+        margin: 40px 0;
+    }
+
+    .professional-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .pro-card {
+        background: var(--card);
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+
+        img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+
+        h3 {
+            color: var(--text);
+        }
+
+        .job-type {
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .portfolio-link {
+            color: var(--muted);
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+
+        transition: transform 0.3s ease,
+        box-shadow 0.3s ease;
+
+        &:hover {
+            transform: translateY(-5px);
+            @include glow-effect;
+        }
+    }
+}

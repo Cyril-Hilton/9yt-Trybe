@@ -1,0 +1,225 @@
+/* Define primary colors and variables */
+:root {
+  --primary-color: #ff4500; /* Mapped to user's --accent */
+  --secondary-color: #2c2c2c; /* Dark grey */
+  --text-color: #ffffff;      /* Mapped to user's --text */
+  --bg-color: #1a1a1a;        /* Background for mobile menu/cards */
+  --header-height: 60px;
+  --bodyFont: sans-serif; /* Placeholder for actual font */
+}
+
+header {
+  /* --- User's Fixed, Glassmorphism Header Styles --- */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 20px; /* User's preferred padding */
+  background: rgba(0, 0, 0, 0.4); /* Glassmorphism background */
+  backdrop-filter: blur(10px);
+  position: fixed; /* Fixed position */
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100; /* Higher z-index for fixed header */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  height: var(--header-height);
+}
+
+.logo {
+  /* --- User's Logo Animation Styles --- */
+  .logo-container {
+    position: relative;
+    transform-style: preserve-3d;
+    animation: rotate-logo 6s infinite ease-in-out;
+    margin-left: 3rem;
+
+    img {
+      width: clamp(35px, 5vw, 60px);
+      height: auto;
+      display: block;
+      
+    }
+  }
+}
+
+/* --- User's Navigation Styles --- */
+app-nav {
+  /* app-nav should wrap the internal nav element */
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+}
+
+nav {
+  ul {
+    display: flex;
+    list-style: none;
+    gap: 30px;
+    margin: 0;
+    padding: 0;
+    font-family: var(--bodyFont);
+  }
+
+  a {
+    color: var(--text-color);
+    text-decoration: none;
+    font-weight: 600;
+    position: relative;
+    transition: color 0.3s ease;
+
+    &::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 2px;
+      bottom: -5px;
+      left: 0;
+      background-color: var(--primary-color); /* Use --primary-color as --accent */
+      transition: width 0.3s ease;
+    }
+
+    &:hover {
+      color: var(--primary-color);
+      &::after {
+        width: 100%;
+      }
+    }
+  }
+  
+  /* Toggle for Mobile Menu */
+  .nav-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 24px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    
+    &:hover {
+      transform: rotate(90deg);
+    }
+  }
+}
+
+/* --- Style for Search and Chat Toggles (Combined with original styles) --- */
+.search-toggle,
+.chat-toggle {
+  /* Basic Button Structure */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  margin-left: 0.75rem; /* Spacing between search/nav and search/chat */
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-color);
+  transition: all 0.3s ease;
+  
+  // Highlighting the active element visually
+  border: 1px solid transparent; 
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--primary-color);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    background-color: var(--primary-color);
+    color: var(--secondary-color); 
+    box-shadow: 0 0 10px rgba(255, 69, 0, 0.7);
+    transform: scale(0.98);
+  }
+}
+
+/* Specific Desktop Spacing (User Request) */
+.chat-toggle {
+    margin-right: 50px; /* Large margin requested for desktop view */
+}
+
+/* --- User's Keyframe Animation --- */
+@keyframes rotate-logo {
+  0% { transform: perspective(500px) rotateY(0deg); }
+  50% { transform: perspective(500px) rotateY(60deg); }
+  100% { transform: perspective(500px) rotateY(0deg); }
+}
+
+/* --- User's Mobile Responsiveness (Updated and integrated) --- */
+@media (max-width: 768px) {
+  header {
+    padding: 8px 15px; /* User's mobile padding */
+    
+    /* Set a default order for items on the right side */
+    & > * {
+        order: 2; 
+    }
+    .logo {
+        order: 1; /* Keep logo on the far left */
+    }
+
+    /* VISUAL REORDERING & ALIGNMENT: SEARCH, CHAT, then NAV TOGGLE */
+    
+    app-nav {
+      flex-grow: 0; /* Prevents app-nav from consuming the center space */
+      order: 4;     /* Places the navigation toggle (contained inside) last */
+    }
+
+    .search-toggle {
+      order: 2; /* Places search icon first in the cluster */
+      margin-left: auto; /* Pushes the entire icon cluster to the right */
+      margin-right: 0.75rem; /* Gap between search and chat */
+    }
+    
+    .chat-toggle {
+      order: 3; /* Places chat icon second */
+      margin-left: 0; /* Resetting the combined margin-left property */
+      margin-right: 0.75rem; /* Creates the small gap before the nav toggle (as requested) */
+    }
+  }
+  
+  /* Icon size adjustment (from previous version) */
+  .search-toggle,
+  .chat-toggle {
+    font-size: 1.1rem;
+    width: 40px;
+    height: 40px;
+  }
+  
+  nav {
+    ul {
+      /* Mobile Menu Styling */
+      top: var(--header-height); /* Position below the header */
+      display: none;
+      flex-direction: column;
+      position: absolute;
+      right: 20px;
+      background: var(--bg-color); /* Use defined background variable */
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      gap: 15px;
+      animation: fadeIn 0.5s ease-out;
+      width: 200px;
+      z-index: 101; /* Ensure menu is above other content */
+    }
+    
+    ul.active {
+      display: flex;
+    }
+    
+    .nav-toggle {
+      display: block;
+      /* Margin to isolate the nav toggle from the screen edge */
+      margin-right: 15px; /* Matches the header's mobile padding (15px) */
+    }
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}

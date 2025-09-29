@@ -1,0 +1,40 @@
+<div class="team-page panel">
+  <h2>Join the Trybe</h2>
+  <p>Ready to be part of the energy? Sign up as a volunteer or a staff member below.</p>
+  
+  <form [formGroup]="teamForm" (ngSubmit)="onSubmit()">
+    <div class="form-group">
+      <label for="name">Name</label>
+      <input id="name" type="text" formControlName="name">
+    </div>
+    <div class="form-group">
+      <label for="title">Title</label>
+      <input id="title" type="text" formControlName="title">
+    </div>
+    <div class="form-group">
+      <label for="role">Role</label>
+      <select id="role" formControlName="role">
+        <option value="Volunteer">Volunteer</option>
+        <option value="Staff">Staff</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="description">Job Description</label>
+      <textarea id="description" formControlName="jobDescription"></textarea>
+    </div>
+    <div class="form-group">
+      <label for="contact">Contact Number</label>
+      <input id="contact" type="text" formControlName="contact">
+    </div>
+    <div class="form-group">
+      <label for="socials">Socials (e.g., @9yttrybe)</label>
+      <input id="socials" type="text" formControlName="socials">
+    </div>
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input id="email" type="email" formControlName="email">
+    </div>
+    
+    <button type="submit" [disabled]="teamForm.invalid">Submit Application</button>
+  </form>
+</div>

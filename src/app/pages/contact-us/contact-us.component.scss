@@ -1,0 +1,43 @@
+.contact-us-page {
+  padding: 40px;
+   margin-top: 7%;
+  .contact-info {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  .info-block {
+    h3 {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      li {
+        margin-bottom: 8px;
+        a {
+          color: var(--muted);
+          text-decoration: none;
+          transition: color 0.3s ease;
+          &:hover {
+            color: var(--accent);
+          }
+        }
+      }
+    }
+  }
+  .chatbot-container {
+    margin-top: 40px;
+    text-align: center;
+    .chatbot-widget-placeholder {
+      background: var(--card);
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      padding: 50px 20px;
+      border-radius: 8px;
+      color: var(--muted);
+    }
+  }
+}

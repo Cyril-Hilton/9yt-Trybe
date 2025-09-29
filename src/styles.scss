@@ -1,1 +1,104 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700;800&family=Inter:wght@300;400;600&display=swap');
+
+// --- Global Variables ---
+$bg: #0f1115;
+$panel: rgba(255, 255, 255, 0.03);
+$text-silvermoon: #B0B5BD;
+$muted: #9aa3b2;
+$accent: #4B5563;
+$accent-contrast: #fff;
+$card: rgba(255, 255, 255, 0.02);
+$shadow: 0 12px 36px rgba(10, 10, 10, 0.6);
+$headingFont: 'Exo 2', sans-serif;
+$bodyFont: 'Inter', sans-serif;
+
+:root {
+  --bg: #{$bg};
+  --panel: #{$panel};
+  --text: #{$text-silvermoon};
+  --muted: #{$muted};
+  --accent: #{$accent};
+  --accent-contrast: #{$accent-contrast};
+  --card: #{$card};
+  --shadow: #{$shadow};
+  --headingFont: #{$headingFont};
+  --bodyFont: #{$bodyFont};
+}
+
+// --- Global Mixins and Animations ---
+@mixin glow-effect {
+  box-shadow: 0 0 15px rgba(176, 181, 189, 0.2);
+  transform: translateY(-3px);
+  transition: all 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+// --- Global Body and Component Styles ---
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: var(--bodyFont);
+  background: linear-gradient(180deg, #0b0d10 0%, #111316 60%);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color .35s ease, color .25s ease;
+  overflow-y: auto;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--headingFont);
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+p {
+  color: var(--muted);
+  margin: 0 0 12px 0;
+}
+.btn {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  cursor: pointer;
+  display: inline-block;
+  border: none;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  &:hover {
+    background-color: lighten(#4B5563, 10%);
+    transform: translateY(-2px);
+  }
+}
+.panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  border-radius: 12px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow: var(--shadow);
+  animation: fadeIn 0.8s ease-out;
+}
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+
+  @media (max-width: 768px) {
+    padding: 10px;
+  }
+}

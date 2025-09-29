@@ -1,0 +1,137 @@
+nav {
+    ul {
+        display: flex;
+        list-style: none;
+        /* Reduced gap to bring icons closer in icon-only view */
+        gap: 10px; 
+        margin: 0;
+        padding: 0;
+        font-family: var(--bodyFont);
+        margin-right: 50px;
+    }
+
+    a {
+        /* Base styling: compresses link to icon size and hides text */
+        display: flex;
+        align-items: center;
+        /* FURTHER Reduced default width to ensure text is fully clipped */
+        width: 25px; 
+        height: 35px; /* Fixed height for icon */
+        overflow: hidden;
+        white-space: nowrap;
+        /* Adjusted padding for better icon centering and clipping */
+        padding: 8px 4px; 
+        border-radius: 8px;
+        box-sizing: border-box;
+        margin-right: 25px;
+
+        color: var(--text);
+        text-decoration: none;
+        font-weight: 600;
+        position: relative;
+        /* Smooth transition for width change, color, and background */
+        transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); 
+
+        i {
+            font-size: 1.1em;
+            /* Ensure icon width is fixed but doesn't push content */
+            min-width: 24px; 
+            text-align: center;
+            margin-right: 0; /* Critical: No margin when text is hidden */
+            transition: margin-right 0.3s ease;
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 3px; 
+            /* Adjusted left position to match the new 4px padding */
+            left: 4px; 
+            /* Silvermoon color for underline */
+            background-color: var(--text); 
+            transition: width 0.3s ease;
+        }
+
+        &:hover {
+            color: var(--text); /* Silvermoon glow effect */
+            background-color: rgba(176, 181, 189, 0.1); /* Subtle hover background */
+            width: 150px; /* Expanded width to reveal text */
+            
+            i {
+                margin-right: 8px; /* Add space between icon and revealed text */
+            }
+
+            &::after {
+                /* Underline spans the full link width (minus 4px padding on each side = 8px total) */
+                width: calc(100% - 8px); 
+            }
+        }
+    }
+
+    .nav-toggle {
+        display: none;
+        background: none;
+        border: none;
+        color: var(--text);
+        font-size: 24px;
+        margin-right: 20px;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+
+        i {
+            transition: transform 0.3s ease;
+        }
+
+        &:hover {
+            transform: rotate(90deg);
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    nav {
+        ul {
+            display: none;
+            flex-direction: column;
+            position: absolute;
+            top: 35px;
+            right: 20px;
+            background: var(--bg);
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            gap: 15px;
+            animation: fadeIn 0.5s ease-out;
+            width: 200px;
+            margin-right: 50px;
+
+            /* Override desktop icon-only compression for mobile menu items */
+            a {
+                width: auto !important;
+                height: auto !important;
+                overflow: visible !important;
+                padding: 5px 0 !important;
+                background: none !important;
+            }
+            
+            a i {
+                margin-right: 10px !important; 
+            }
+            
+            a:hover::after {
+                width: 100% !important;
+                left: 0 !important;
+            }
+        }
+        
+        ul.active {
+            display: flex;
+        }
+        
+        .nav-toggle {
+            display: block;
+        }
+    }
+}
