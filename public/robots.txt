@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /organization/
+Disallow: /user/dashboard
+Disallow: /user/tickets
+Disallow: /user/orders
+Disallow: /cart
+Disallow: /checkout
+
+# Sitemap Location
+Sitemap: https://9yttrybe.com/sitemap.xml
+
+# Crawl Delay (optional - helps with server load)
+Crawl-delay: 1

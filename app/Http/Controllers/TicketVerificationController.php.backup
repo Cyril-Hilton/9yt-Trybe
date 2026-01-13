@@ -1,0 +1,224 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Event;
+use App\Models\EventTicket;
+use App\Models\EventOrder;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class TicketVerificationController extends Controller
+{
+    /**
+     * Show scanner interface for organizers
+     */
+    public function showScanner(Event $event)
+    {
+        $company = auth()->guard('company')->user();
+        if ($event->company_id !== $company->id) {
+            abort(403, 'Unauthorized access to this event');
+        }
+
+        $stats = $this->getEventStats($event);
+
+        return view('organization.ticket-scanner', compact('event', 'stats'));
+    }
+
+    /**
+     * Show scanner interface for staff (simple one-page scanner)
+     */
+    public function showStaffScanner()
+    {
+        $staff = auth()->guard('staff')->user();
+
+        // Get events this staff member can access
+        $events = Event::where('company_id', $staff->company_id)
+                      ->when($staff->event_ids, function($q) use ($staff) {
+                          $q->whereIn('id', $staff->event_ids);
+                      })
+                      ->get();
+
+        return view('staff.scanner', compact('staff', 'events'));
+    }
+
+    /**
+     * Verify ticket (works for both company and staff)
+     */
+    public function verify(Request $request)
+    {
+        $validated = $request->validate([
+            'ticket_code' => 'required|string',
+            'event_id' => 'required|exists:events,id',
+            'method' => 'required|in:qr,manual',
+            'notes' => 'nullable|string|max:500'
+        ]);
+
+        // Determine who is checking in
+        $checkedInByCompany = null;
+        $checkedInByStaff = null;
+
+        if (auth()->guard('company')->check()) {
+            $checkedInByCompany = auth()->guard('company')->id();
+        } elseif (auth()->guard('staff')->check()) {
+            $staff = auth()->guard('staff')->user();
+            $checkedInByStaff = $staff->id;
+            $checkedInByCompany = $staff->company_id;
+
+            if (!$staff->canAccessEvent($validated['event_id'])) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized access to this event'
+                ], 403);
+            }
+        } else {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Authentication required'
+            ], 401);
+        }
+
+        // Find ticket
+        $ticket = EventTicket::where('ticket_code', $validated['ticket_code'])
+                       ->whereHas('order', function($q) use ($validated) {
+                           $q->where('event_id', $validated['event_id']);
+                       })
+                       ->with(['order.event', 'order.company'])
+                       ->first();
+
+        if (!$ticket) {
+            return response()->json([
+                'status' => 'invalid',
+                'message' => 'Ticket not found or does not belong to this event'
+            ], 404);
+        }
+
+        // Check if already checked in
+        if ($ticket->checked_in_at) {
+            $checkedInBy = $ticket->checked_in_by_staff
+                ? \App\Models\OrganizationStaff::find($ticket->checked_in_by_staff)->name ?? 'Unknown Staff'
+                : \App\Models\Company::find($ticket->checked_in_by_company)->name ?? 'Unknown Organizer';
+
+            return response()->json([
+                'status' => 'duplicate',
+                'message' => 'Ticket already used',
+                'checked_in_at' => $ticket->checked_in_at->format('M j, Y g:i A'),
+                'checked_in_by' => $checkedInBy,
+                'ticket' => [
+                    'code' => $ticket->ticket_code,
+                    'holder_name' => $ticket->order->customer_name,
+                    'holder_email' => $ticket->order->customer_email,
+                    'ticket_type' => $ticket->ticket_type ?? 'General',
+                ]
+            ], 400);
+        }
+
+        // Check in the ticket
+        DB::beginTransaction();
+        try {
+            $ticket->update([
+                'checked_in_at' => now(),
+                'checked_in_by_staff' => $checkedInByStaff,
+                'checked_in_by_company' => $checkedInByCompany,
+                'check_in_method' => $validated['method'],
+                'check_in_ip' => $request->ip(),
+                'check_in_notes' => $validated['notes'] ?? null,
+            ]);
+
+            DB::commit();
+
+            $staffName = $checkedInByStaff
+                ? auth()->guard('staff')->user()->name
+                : auth()->guard('company')->user()->name;
+
+            return response()->json([
+                'status' => 'valid',
+                'message' => 'Ticket verified successfully',
+                'ticket' => [
+                    'code' => $ticket->ticket_code,
+                    'holder_name' => $ticket->order->customer_name,
+                    'holder_email' => $ticket->order->customer_email,
+                    'ticket_type' => $ticket->ticket_type ?? 'General',
+                    'event_name' => $ticket->order->event->title,
+                    'checked_in_by' => $staffName,
+                    'checked_in_at' => $ticket->checked_in_at->format('M j, Y g:i A'),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Ticket check-in failed: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to check in ticket. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get event statistics
+     */
+    private function getEventStats(Event $event)
+    {
+        $totalTickets = EventTicket::whereHas('order', function($q) use ($event) {
+            $q->where('event_id', $event->id)
+              ->where('payment_status', 'completed');
+        })->count();
+
+        $checkedInTickets = EventTicket::whereHas('order', function($q) use ($event) {
+            $q->where('event_id', $event->id)
+              ->where('payment_status', 'completed');
+        })->whereNotNull('checked_in_at')->count();
+
+        $pendingTickets = $totalTickets - $checkedInTickets;
+        $checkInRate = $totalTickets > 0 ? round(($checkedInTickets / $totalTickets) * 100, 1) : 0;
+
+        return [
+            'total' => $totalTickets,
+            'checked_in' => $checkedInTickets,
+            'pending' => $pendingTickets,
+            'rate' => $checkInRate,
+        ];
+    }
+
+    /**
+     * Get real-time check-in activity
+     */
+    public function getActivity(Event $event)
+    {
+        $recentCheckins = EventTicket::whereHas('order', function($q) use ($event) {
+            $q->where('event_id', $event->id);
+        })
+        ->whereNotNull('checked_in_at')
+        ->with(['order'])
+        ->orderBy('checked_in_at', 'desc')
+        ->limit(10)
+        ->get()
+        ->map(function($ticket) {
+            $checkedInBy = 'Unknown';
+            if ($ticket->checked_in_by_staff) {
+                $staff = \App\Models\OrganizationStaff::find($ticket->checked_in_by_staff);
+                $checkedInBy = $staff ? $staff->name . ' (Staff)' : 'Staff';
+            } elseif ($ticket->checked_in_by_company) {
+                $company = \App\Models\Company::find($ticket->checked_in_by_company);
+                $checkedInBy = $company ? $company->name . ' (Organizer)' : 'Organizer';
+            }
+
+            return [
+                'holder_name' => $ticket->order->customer_name,
+                'ticket_code' => substr($ticket->ticket_code, -6),
+                'checked_in_at' => $ticket->checked_in_at->diffForHumans(),
+                'checked_in_by' => $checkedInBy,
+                'method' => ucfirst($ticket->check_in_method ?? 'unknown'),
+            ];
+        });
+
+        $stats = $this->getEventStats($event);
+
+        return response()->json([
+            'stats' => $stats,
+            'recent_checkins' => $recentCheckins
+        ]);
+    }
+}

@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(php artisan:*)",
+      "Bash(curl:*)",
+      "Bash(test:*)",
+      "Bash(ls:*)",
+      "Bash(composer require:*)",
+      "Bash(del ALL_HEADER_FIXES_APPLIED.md COMPLETED_FIXES_SUMMARY.md FEATURES_IMPLEMENTED.md FINAL_FIXES_APPLIED.md FINAL_HEADER_TEXT_FIXES.md FINAL_IMPLEMENTATION_GUIDE.md HEADER_STATUS_CHECK.md PROFESSIONAL_IMPROVEMENTS.md TICKET_VERIFICATION_SYSTEM.md ULTIMATE_PROFESSIONAL_FIXES_COMPLETE.md)",
+      "Bash(php test_tickets.php:*)",
+      "Bash(del:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git checkout:*)",
+      "Bash(xargs -r git branch:*)",
+      "Bash(xargs -I {} git push origin --delete {})",
+      "Bash(git branch:*)",
+      "Bash(git fetch:*)"
+    ]
+  }
+}
