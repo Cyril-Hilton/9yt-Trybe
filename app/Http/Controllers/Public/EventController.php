@@ -75,6 +75,7 @@ class EventController extends Controller
     {
         $query = Event::approved()->with('company');
         $category = null;
+        $invalidCategory = false;
 
         // Search by keyword
         if ($request->filled('search')) {
@@ -123,11 +124,18 @@ class EventController extends Controller
 
         // Filter by category (Eventbrite-style)
         if ($request->filled('category')) {
-            $category = Category::active()->where('slug', $request->input('category'))->first();
-            if (!$category) {
-                abort(404);
+            $categorySlug = $request->input('category');
+            $category = Category::active()->where('slug', $categorySlug)->first();
+
+            if ($category) {
+                $query->inCategory($category->slug);
+            } else {
+                $invalidCategory = true;
+                $category = Category::make([
+                    'slug' => $categorySlug,
+                    'name' => ucwords(str_replace('-', ' ', $categorySlug)),
+                ]);
             }
-            $query->inCategory($category->slug);
         }
 
         // Sorting
@@ -142,7 +150,7 @@ class EventController extends Controller
                 break;
         }
 
-        $events = $query->paginate(12);
+        $events = $invalidCategory ? collect() : $query->paginate(12);
 
         // Get trending events for sidebar
         $trendingEvents = Event::approved()
@@ -167,7 +175,8 @@ class EventController extends Controller
             'trendingEvents',
             'upcomingEventDates',
             'categories',
-            'category'
+            'category',
+            'invalidCategory'
         ));
     }
 

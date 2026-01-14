@@ -136,6 +136,21 @@ return new class extends Migration
      */
     private function foreignKeyExists(string $table, string $column): bool
     {
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'sqlite') {
+            $quotedTable = str_replace("'", "''", $table);
+            $foreignKeys = DB::select("PRAGMA foreign_key_list('{$quotedTable}')");
+            foreach ($foreignKeys as $foreignKey) {
+                if ((property_exists($foreignKey, 'from') && $foreignKey->from === $column)
+                    || (is_array($foreignKey) && ($foreignKey['from'] ?? null) === $column)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         $foreignKeys = DB::select(
             "SELECT CONSTRAINT_NAME
              FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE

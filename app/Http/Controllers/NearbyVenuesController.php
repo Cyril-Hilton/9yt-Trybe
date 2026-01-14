@@ -123,16 +123,18 @@ class NearbyVenuesController extends Controller
                 $data = $response->json();
 
                 if (($data['status'] ?? null) === 'REQUEST_DENIED' || ($data['status'] ?? null) === 'INVALID_REQUEST') {
+                    $errorMessage = $data['error_message'] ?? 'Google Places request denied.';
                     \Log::error('Google Places API Request Denied', [
                         'api_status' => $data['status'] ?? 'unknown',
-                        'error_message' => $data['error_message'] ?? 'Request denied',
+                        'error_message' => $errorMessage,
                         'category' => $params['category'],
                         'config' => $config
                     ]);
                     return response()->json([
                         'places' => [],
                         'total_results' => 0,
-                        'error' => $data['error_message'] ?? 'Google Places request denied.',
+                        'error' => $errorMessage,
+                        'billing_off' => $this->isBillingDisabled($errorMessage),
                     ]);
                 }
 
@@ -346,5 +348,20 @@ class NearbyVenuesController extends Controller
             'city' => 'Accra',
             'country' => 'Ghana'
         ]);
+    }
+
+    private function isBillingDisabled(string $errorMessage): bool
+    {
+        $message = strtolower($errorMessage);
+
+        if (!str_contains($message, 'billing')) {
+            return false;
+        }
+
+        return str_contains($message, 'not been enabled')
+            || str_contains($message, 'billing account')
+            || str_contains($message, 'billing must be enabled')
+            || str_contains($message, 'activate billing')
+            || str_contains($message, 'enable billing');
     }
 }

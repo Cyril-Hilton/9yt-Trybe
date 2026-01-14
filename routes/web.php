@@ -601,6 +601,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/magazine/{image}', [App\Http\Controllers\Admin\AdminGalleryController::class, 'magazineDestroy'])
             ->name('magazine.destroy');
 
+        // News Articles Management
+        Route::resource('articles', App\Http\Controllers\Admin\AdminArticleController::class);
+
         // Contact Messages
         Route::get('/contact-messages', [App\Http\Controllers\Admin\AdminContactController::class, 'index'])
             ->name('contact.index');

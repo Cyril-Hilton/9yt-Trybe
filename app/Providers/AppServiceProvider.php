@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use App\Models\Conference;
 use App\Policies\ConferencePolicy;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,7 +22,8 @@ class AppServiceProvider extends ServiceProvider
      * Bootstrap any application services.
      */
     public function boot(): void
-  {
-    Gate::policy(Conference::class, ConferencePolicy::class);
-}
+    {
+        Schema::defaultStringLength(191);
+        Gate::policy(Conference::class, ConferencePolicy::class);
+    }
 }

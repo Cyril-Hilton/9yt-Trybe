@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" x-data="initApp()" :class="darkMode ? 'dark' : ''">
+<html lang="en" x-data="initApp()" x-init="init()" :class="darkMode ? 'dark' : ''">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1216,7 +1216,7 @@
     </nav>
 
     <!-- Hero Slider Section with Futuristic Design -->
-    <section class="relative bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-slate-900/20 dark:to-slate-800/20 transition-colors duration-300 -mt-20" x-data="slider()">
+    <section class="relative bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-slate-900/20 dark:to-slate-800/20 transition-colors duration-300 -mt-20" x-data="slider()" x-init="init()">
         <div class="relative h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden neon-border rounded-b-3xl">
             <!-- Slide 1 - Video -->
             <div x-show="currentSlide === 0"
@@ -1314,14 +1314,34 @@
             <!-- Event Categories (PROFESSIONAL - iOS 26 Liquid Glass Style) -->
             <div class="mt-6 sm:mt-8">
                 <!-- Horizontally Scrollable on Mobile, Grid on Desktop -->
-                <div class="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:overflow-visible scrollbar-hide">
-                    <div class="flex sm:grid sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-11 gap-3 sm:gap-4 min-w-max sm:min-w-0">
+                <div class="overflow-x-auto pb-2 -mx-4 sm:mx-0 sm:overflow-visible scrollbar-hide">
+                    <div class="flex sm:grid sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-11 gap-3 sm:gap-4 min-w-max sm:min-w-0 px-4 sm:px-0 after:content-[''] after:block after:w-4 after:flex-shrink-0 sm:after:hidden">
                         @php
-                            // Get professional categories from database
+                            // Get professional categories from the database
                             $featuredCategories = \App\Models\Category::active()
                                 ->whereIn('slug', ['music', 'nightlife', 'business', 'food-drink', 'performing-arts', 'dating', 'hobbies', 'holidays', 'sports-fitness', 'education'])
                                 ->limit(10)
                                 ->get();
+
+                            // Fall back to a curated list when the DB does not have any active categories yet
+                            if ($featuredCategories->isEmpty()) {
+                                $fallbackCategories = [
+                                    ['slug' => 'music', 'name' => 'Music', 'color' => 'purple', 'icon_svg' => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>'],
+                                    ['slug' => 'nightlife', 'name' => 'Nightlife', 'color' => 'indigo', 'icon_svg' => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>'],
+                                    ['slug' => 'business', 'name' => 'Business', 'color' => 'blue', 'icon_svg' => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>'],
+                                    ['slug' => 'food-drink', 'name' => 'Food & Drink', 'color' => 'orange', 'icon_svg' => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>'],
+                                    ['slug' => 'performing-arts', 'name' => 'Performing Arts', 'color' => 'pink', 'icon_svg' => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>'],
+                                    ['slug' => 'dating', 'name' => 'Dating', 'color' => 'rose', 'icon_svg' => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>'],
+                                    ['slug' => 'hobbies', 'name' => 'Hobbies', 'color' => 'cyan', 'icon_svg' => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'],
+                                    ['slug' => 'holidays', 'name' => 'Holiday Events', 'color' => 'red', 'icon_svg' => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>'],
+                                    ['slug' => 'sports-fitness', 'name' => 'Sports & Fitness', 'color' => 'green', 'icon_svg' => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>'],
+                                    ['slug' => 'education', 'name' => 'Education', 'color' => 'blue', 'icon_svg' => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>'],
+                                ];
+
+                                $featuredCategories = collect($fallbackCategories)->map(function ($item) {
+                                    return \App\Models\Category::make($item);
+                                });
+                            }
                         @endphp
 
                         @foreach($featuredCategories as $category)
@@ -2224,7 +2244,7 @@
                         this.venues = [];
                         this.errorMessage = error && error.name === 'AbortError'
                             ? 'Nearby venues request timed out. Please try again.'
-                            : 'Unable to load nearby venues right now.';
+                            : 'We couldn\'t find any venues right now. Please try again in a moment!';
                     } finally {
                         this.loading = false;
                     }

@@ -7,11 +7,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    private function isSqlite(): bool
+    {
+        return Schema::getConnection()->getDriverName() === 'sqlite';
+    }
+
     /**
      * Run the migrations.
      */
     public function up(): void
     {
+        if ($this->isSqlite()) {
+            return;
+        }
+
         // Allow global polls (no company)
         Schema::table('polls', function (Blueprint $table) {
             $table->dropForeign(['company_id']);
@@ -39,6 +48,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if ($this->isSqlite()) {
+            return;
+        }
+
         Schema::table('polls', function (Blueprint $table) {
             $table->dropForeign(['company_id']);
         });

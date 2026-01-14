@@ -53,39 +53,17 @@ class SearchController extends Controller
         $fuzzyVariations = $this->getFuzzyVariations($query);
 
         if ($type === 'all' || $type === 'events') {
-            $events = Event::where('status', 'approved') // Only show approved events
-                ->where(function ($q) use ($query, $searchTerms, $fuzzyVariations) {
-                    // Fuzzy matches on title (most important)
-                    foreach ($fuzzyVariations as $variation) {
-                        $q->orWhereRaw("LOWER(title) LIKE ?", ["%{$variation}%"])
-                          ->orWhereRaw("LOWER(REPLACE(title, ' ', '')) LIKE ?", ["%{$variation}%"]);
-                    }
-
-                    // Standard LIKE searches on other fields
-                    $q->orWhereRaw("LOWER(venue_name) LIKE ?", ["%" . strtolower($query) . "%"])
-                      ->orWhereRaw("LOWER(summary) LIKE ?", ["%" . strtolower($query) . "%"])
-                      ->orWhereRaw("LOWER(overview) LIKE ?", ["%" . strtolower($query) . "%"])
-                      ->orWhereRaw("LOWER(venue_address) LIKE ?", ["%" . strtolower($query) . "%"])
-                      ->orWhereRaw("LOWER(region) LIKE ?", ["%" . strtolower($query) . "%"]);
-
-                    // Search individual terms for broader matching
-                    foreach ($searchTerms as $term) {
-                        if (strlen($term) >= 3) {
-                            $termLower = strtolower($term);
-                            $q->orWhereRaw("LOWER(title) LIKE ?", ["%{$termLower}%"])
-                              ->orWhereRaw("LOWER(summary) LIKE ?", ["%{$termLower}%"]);
-                        }
-                    }
-
-                    // Search by category name
-                    $q->orWhereHas('categories', function ($cq) use ($query) {
-                        $cq->whereRaw("LOWER(name) LIKE ?", ["%" . strtolower($query) . "%"]);
-                    });
-
-                    // Search by organizer/company name
-                    $q->orWhereHas('company', function ($cq) use ($query) {
-                        $cq->whereRaw("LOWER(name) LIKE ?", ["%" . strtolower($query) . "%"]);
-                    });
+            $events = Event::where('status', 'approved')
+                ->where(function ($q) use ($query) {
+                    $q->where('title', 'LIKE', "%{$query}%")
+                      ->orWhere('summary', 'LIKE', "%{$query}%")
+                      ->orWhere('venue_name', 'LIKE', "%{$query}%")
+                      ->orWhereHas('categories', function ($cq) use ($query) {
+                          $cq->where('name', 'LIKE', "%{$query}%");
+                      })
+                      ->orWhereHas('company', function ($cq) use ($query) {
+                          $cq->where('name', 'LIKE', "%{$query}%");
+                      });
                 })
                 ->with(['company:id,name', 'categories:id,name,slug'])
                 ->latest('start_date')

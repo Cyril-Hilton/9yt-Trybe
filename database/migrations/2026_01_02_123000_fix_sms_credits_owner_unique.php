@@ -9,6 +9,21 @@ return new class extends Migration
 {
     private function indexExists(string $table, string $indexName): bool
     {
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'sqlite') {
+            $quotedTable = str_replace("'", "''", $table);
+            $indexes = DB::select("PRAGMA index_list('{$quotedTable}')");
+            foreach ($indexes as $index) {
+                if ((property_exists($index, 'name') && $index->name === $indexName)
+                    || (is_array($index) && ($index['name'] ?? null) === $indexName)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         $result = DB::select(
             'SELECT COUNT(*) as count FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?',
             [$table, $indexName]

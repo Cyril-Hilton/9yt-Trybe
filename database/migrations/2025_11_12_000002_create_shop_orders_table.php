@@ -8,6 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::dropIfExists('shop_order_items');
+        Schema::dropIfExists('shop_orders');
         Schema::create('shop_orders', function (Blueprint $table) {
             $table->id();
             $table->string('order_number')->unique();

@@ -53,6 +53,8 @@ return new class extends Migration
     {
         Schema::table('companies', function (Blueprint $table) {
             if (Schema::hasColumn('companies', 'slug')) {
+                // Fix for SQLite: explicitly drop the index first
+                $table->dropUnique(['slug']);
                 $table->dropColumn('slug');
             }
         });
