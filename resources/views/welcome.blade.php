@@ -22,7 +22,7 @@
             darkMode: 'class',
         }
     </script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="{{ asset('css/glassmorphism.css') }}?v={{ time() }}">
     <style>
         [x-cloak] { display: none !important; }
@@ -694,8 +694,8 @@
     </style>
 
     <!-- Shepherd.js for Product Tours -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/css/shepherd.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/js/shepherd.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@@11.2.0/dist/css/shepherd.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/shepherd.js@@11.2.0/dist/js/shepherd.min.js"></script>
 </head>
 <body class="bg-white dark:bg-black min-h-screen transition-colors duration-300" x-data="{ mobileMenuOpen: false }">
     <!-- Page Loader with Glassmorphism Logo -->
@@ -743,26 +743,26 @@
 
                 <!-- Right Section: Search + Auth/Guest + Dark Mode + Mobile Menu -->
                 <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                    @auth
+                    @if(Auth::check())
                     <div class="flex items-center gap-2 sm:gap-3 md:gap-4">
                         <!-- Global Search Icon with Live Autocomplete -->
                         <div x-data="{ searchOpen: false, query: '', suggestions: [], loading: false, error: '' }" class="relative">
-                            <button @click="searchOpen = !searchOpen; if(searchOpen) $nextTick(() => $refs.searchInput.focus())" class="text-white hover:text-cyan-300 transition">
+                            <button x-on:click="searchOpen = !searchOpen; if(searchOpen) $nextTick(() => $refs.searchInput.focus())" class="text-white hover:text-cyan-300 transition">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                 </svg>
                             </button>
                             <!-- Search Dropdown with Live Suggestions -->
-                            <div x-show="searchOpen" @click.away="searchOpen = false" x-cloak
+                            <div x-show="searchOpen" x-on:click.away="searchOpen = false" x-cloak
                                  class="absolute right-0 mt-3 w-80 sm:w-96 max-w-[90vw] glass-dropdown rounded-2xl p-3 sm:p-4 z-50 shadow-2xl">
-                                <form action="{{ route('search') }}" method="GET" @submit.prevent="if(query) window.location.href = '{{ route('search') }}?q=' + query">
+                                <form action="{{ route('search') }}" method="GET" x-on:submit.prevent="if(query) window.location.href = '{{ route('search') }}?q=' + query">
                                     <div class="relative">
                                         <input
                                             x-ref="searchInput"
                                             type="text"
                                             name="q"
                                             x-model="query"
-                                            @input.debounce.300ms="
+                                            x-on:input.debounce.300ms="
                                                 error = '';
                                                 if(query.length > 0) {
                                                     loading = true;
@@ -839,7 +839,7 @@
 
                         <!-- User Dropdown -->
                         <div x-data="{ open: false }" class="relative">
-                            <button @click="open = !open" class="flex items-center gap-1 sm:gap-2 text-white hover:text-cyan-300 font-medium transition whitespace-nowrap">
+                            <button x-on:click="open = !open" class="flex items-center gap-1 sm:gap-2 text-white hover:text-cyan-300 font-medium transition whitespace-nowrap">
                                 <svg class="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                 </svg>
@@ -848,7 +848,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                 </svg>
                             </button>
-                            <div x-show="open" @click.away="open = false" x-cloak
+                            <div x-show="open" x-on:click.away="open = false" x-cloak
                                  class="absolute right-0 mt-2 w-64 glass-dropdown rounded-xl py-2 z-50 shadow-2xl">
                                 <div class="px-4 py-3 border-b border-white/20 dark:border-gray-700/50">
                                     <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ auth()->user()->name }}</p>
@@ -889,27 +889,26 @@
                             </div>
                         </div>
                     </div>
-                    @else
-                    @auth('company')
+                    @elseif(Auth::guard('company')->check())
                     <div class="flex items-center gap-2 sm:gap-3 md:gap-4">
                         <!-- Global Search Icon with Live Autocomplete -->
                         <div x-data="{ searchOpen: false, query: '', suggestions: [], loading: false, error: '' }" class="relative">
-                            <button @click="searchOpen = !searchOpen; if(searchOpen) $nextTick(() => $refs.searchInput.focus())" class="text-white hover:text-cyan-300 transition">
+                            <button x-on:click="searchOpen = !searchOpen; if(searchOpen) $nextTick(() => $refs.searchInput.focus())" class="text-white hover:text-cyan-300 transition">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                 </svg>
                             </button>
                             <!-- Search Dropdown with Live Suggestions -->
-                            <div x-show="searchOpen" @click.away="searchOpen = false" x-cloak
+                            <div x-show="searchOpen" x-on:click.away="searchOpen = false" x-cloak
                                  class="absolute right-0 mt-3 w-80 sm:w-96 max-w-[90vw] glass-dropdown rounded-2xl p-3 sm:p-4 z-50 shadow-2xl">
-                                <form action="{{ route('search') }}" method="GET" @submit.prevent="if(query) window.location.href = '{{ route('search') }}?q=' + query">
+                                <form action="{{ route('search') }}" method="GET" x-on:submit.prevent="if(query) window.location.href = '{{ route('search') }}?q=' + query">
                                     <div class="relative">
                                         <input
                                             x-ref="searchInput"
                                             type="text"
                                             name="q"
                                             x-model="query"
-                                            @input.debounce.300ms="
+                                            x-on:input.debounce.300ms="
                                                 error = '';
                                                 if(query.length > 0) {
                                                     loading = true;
@@ -986,7 +985,7 @@
 
                         <!-- Organization Dropdown -->
                         <div x-data="{ open: false }" class="relative">
-                            <button @click="open = !open" class="flex items-center gap-1 sm:gap-2 text-white hover:text-cyan-300 font-medium transition whitespace-nowrap">
+                            <button x-on:click="open = !open" class="flex items-center gap-1 sm:gap-2 text-white hover:text-cyan-300 font-medium transition whitespace-nowrap">
                                 <svg class="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                 </svg>
@@ -995,7 +994,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                 </svg>
                             </button>
-                            <div x-show="open" @click.away="open = false" x-cloak
+                            <div x-show="open" x-on:click.away="open = false" x-cloak
                                  class="absolute right-0 mt-2 w-64 glass-dropdown rounded-xl py-2 z-50 shadow-2xl">
                                 <div class="px-4 py-3 border-b border-white/20 dark:border-gray-700/50">
                                     <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ auth('company')->user()->name }}</p>
@@ -1050,22 +1049,22 @@
                     <div class="hidden md:flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
                         <!-- Global Search Icon with Live Autocomplete -->
                         <div x-data="{ searchOpen: false, query: '', suggestions: [], loading: false, error: '' }" class="relative">
-                            <button @click="searchOpen = !searchOpen; if(searchOpen) $nextTick(() => $refs.searchInput.focus())" class="text-white hover:text-cyan-300 transition">
+                            <button x-on:click="searchOpen = !searchOpen; if(searchOpen) $nextTick(() => $refs.searchInput.focus())" class="text-white hover:text-cyan-300 transition">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                 </svg>
                             </button>
                             <!-- Search Dropdown with Live Suggestions -->
-                            <div x-show="searchOpen" @click.away="searchOpen = false" x-cloak
+                            <div x-show="searchOpen" x-on:click.away="searchOpen = false" x-cloak
                                  class="absolute right-0 mt-3 w-80 sm:w-96 max-w-[90vw] glass-dropdown rounded-2xl p-3 sm:p-4 z-50 shadow-2xl">
-                                <form action="{{ route('search') }}" method="GET" @submit.prevent="if(query) window.location.href = '{{ route('search') }}?q=' + query">
+                                <form action="{{ route('search') }}" method="GET" x-on:submit.prevent="if(query) window.location.href = '{{ route('search') }}?q=' + query">
                                     <div class="relative">
                                         <input
                                             x-ref="searchInput"
                                             type="text"
                                             name="q"
                                             x-model="query"
-                                            @input.debounce.300ms="
+                                            x-on:input.debounce.300ms="
                                                 error = '';
                                                 if(query.length > 0) {
                                                     loading = true;
@@ -1143,11 +1142,10 @@
                         <a href="{{ route('user.login') }}" class="px-4 py-2 text-white hover:text-cyan-300 font-medium transition whitespace-nowrap flex-shrink-0">Login</a>
                         <a href="{{ route('user.register') }}" class="glass-btn px-6 py-2 rounded-lg font-semibold transition-all shadow-lg whitespace-nowrap flex-shrink-0" style="white-space: nowrap !important;">Sign&nbsp;Up</a>
                     </div>
-                    @endauth
-                    @endauth
+                    @endif
 
                     <!-- Dark Mode Toggle -->
-                    <button @click="toggleDarkMode()" class="glass-btn p-2 rounded-lg transition-all flex-shrink-0">
+                    <button x-on:click="toggleDarkMode()" class="glass-btn p-2 rounded-lg transition-all flex-shrink-0">
                         <svg x-show="!darkMode" class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                         </svg>
@@ -1157,7 +1155,7 @@
                     </button>
 
                     <!-- Mobile Menu Button -->
-                    <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden p-2 text-white hover:bg-white/20 rounded-lg transition flex-shrink-0">
+                    <button x-on:click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden p-2 text-white hover:bg-white/20 rounded-lg transition flex-shrink-0">
                         <svg x-show="!mobileMenuOpen" class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                         </svg>
@@ -1178,7 +1176,7 @@
              x-transition:leave="transition ease-in duration-150"
              x-transition:leave-start="opacity-100 transform scale-100"
              x-transition:leave-end="opacity-0 transform scale-95"
-             @click.away="mobileMenuOpen = false"
+             x-on:click.away="mobileMenuOpen = false"
              class="md:hidden glass-dropdown border-t-2 border-white/30 dark:border-gray-700/50 shadow-2xl">
             <div class="px-4 py-3 space-y-2">
                 <a href="{{ route('events.index') }}" class="block px-4 py-2 text-gray-900 dark:text-white font-medium bg-white/30 dark:bg-gray-800/40 hover:bg-white/50 dark:hover:bg-gray-800/70 rounded-xl transition-all border border-white/30 dark:border-gray-700/40 shadow-lg">Events</a>
@@ -1189,7 +1187,7 @@
                 <a href="{{ route('team.index') }}" class="block px-4 py-2 text-gray-900 dark:text-white font-medium bg-white/30 dark:bg-gray-800/40 hover:bg-white/50 dark:hover:bg-gray-800/70 rounded-xl transition-all border border-white/30 dark:border-gray-700/40 shadow-lg">Team</a>
                 <a href="{{ route('about') }}" class="block px-4 py-2 text-gray-900 dark:text-white font-medium bg-white/30 dark:bg-gray-800/40 hover:bg-white/50 dark:hover:bg-gray-800/70 rounded-xl transition-all border border-white/30 dark:border-gray-700/40 shadow-lg">About</a>
                 <a href="{{ route('contact') }}" class="block px-4 py-2 text-gray-900 dark:text-white font-medium bg-white/30 dark:bg-gray-800/40 hover:bg-white/50 dark:hover:bg-gray-800/70 rounded-xl transition-all border border-white/30 dark:border-gray-700/40 shadow-lg">Contact</a>
-                @auth
+                @if(Auth::check())
                 <div class="border-t border-white/30 dark:border-gray-700/50 pt-2 mt-2">
                     <a href="{{ route('user.dashboard') }}" class="block px-4 py-2 text-gray-900 dark:text-white font-medium bg-white/30 dark:bg-gray-800/40 hover:bg-white/50 dark:hover:bg-gray-800/70 rounded-xl transition-all border border-white/30 dark:border-gray-700/40 shadow-lg">Dashboard</a>
                     <a href="{{ route('user.tickets') }}" class="block px-4 py-2 text-gray-900 dark:text-white font-medium bg-white/30 dark:bg-gray-800/40 hover:bg-white/50 dark:hover:bg-gray-800/70 rounded-xl transition-all border border-white/30 dark:border-gray-700/40 shadow-lg">My Tickets</a>
@@ -1198,8 +1196,7 @@
                         <button type="submit" class="block w-full text-left px-4 py-2 text-red-600 dark:text-red-400 font-medium bg-red-50/30 dark:bg-red-900/20 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all border border-red-200/30 dark:border-red-800/30">Logout</button>
                     </form>
                 </div>
-                @else
-                @auth('company')
+                @elseif(Auth::guard('company')->check())
                 <div class="border-t border-white/30 dark:border-gray-700/50 pt-2 mt-2">
                     <a href="{{ route('organization.dashboard') }}" class="block px-4 py-2 text-gray-900 dark:text-white font-medium bg-white/30 dark:bg-gray-800/40 hover:bg-white/50 dark:hover:bg-gray-800/70 rounded-xl transition-all border border-white/30 dark:border-gray-700/40 shadow-lg">Dashboard</a>
                     <a href="{{ route('organization.events.index') }}" class="block px-4 py-2 text-gray-900 dark:text-white font-medium bg-white/30 dark:bg-gray-800/40 hover:bg-white/50 dark:hover:bg-gray-800/70 rounded-xl transition-all border border-white/30 dark:border-gray-700/40 shadow-lg">My Events</a>
@@ -1213,8 +1210,7 @@
                     <a href="{{ route('user.login') }}" class="block px-4 py-2 text-gray-900 dark:text-white font-medium bg-white/30 dark:bg-gray-800/40 hover:bg-white/50 dark:hover:bg-gray-800/70 rounded-xl transition-all border border-white/30 dark:border-gray-700/40 shadow-lg">Login</a>
                     <a href="{{ route('user.register') }}" class="glass-btn block px-4 py-2 mt-2 rounded-xl font-semibold text-center transition-all">Sign&nbsp;Up</a>
                 </div>
-                @endauth
-                @endauth
+                @endif
             </div>
         </div>
     </nav>
@@ -1255,12 +1251,12 @@
             </div>
 
             <!-- Navigation Arrows with Glow -->
-            <button @click="prevSlide()" class="absolute left-4 top-1/2 transform -translate-y-1/2 glass-effect text-white p-3 rounded-full transition hover-lift neon-border z-10">
+            <button x-on:click="prevSlide()" class="absolute left-4 top-1/2 transform -translate-y-1/2 glass-effect text-white p-3 rounded-full transition hover-lift neon-border z-10">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
             </button>
-            <button @click="nextSlide()" class="absolute right-4 top-1/2 transform -translate-y-1/2 glass-effect text-white p-3 rounded-full transition hover-lift neon-border z-10">
+            <button x-on:click="nextSlide()" class="absolute right-4 top-1/2 transform -translate-y-1/2 glass-effect text-white p-3 rounded-full transition hover-lift neon-border z-10">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
@@ -1268,8 +1264,8 @@
 
             <!-- Dots Navigation with Glow -->
             <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-3 z-10">
-                <button @click="currentSlide = 0" :class="currentSlide === 0 ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 w-8' : 'bg-white bg-opacity-50 w-3'" class="h-3 rounded-full transition-all duration-300 neon-border"></button>
-                <button @click="currentSlide = 1" :class="currentSlide === 1 ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 w-8' : 'bg-white bg-opacity-50 w-3'" class="h-3 rounded-full transition-all duration-300 neon-border"></button>
+                <button x-on:click="currentSlide = 0" :class="currentSlide === 0 ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 w-8' : 'bg-white bg-opacity-50 w-3'" class="h-3 rounded-full transition-all duration-300 neon-border"></button>
+                <button x-on:click="currentSlide = 1" :class="currentSlide === 1 ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 w-8' : 'bg-white bg-opacity-50 w-3'" class="h-3 rounded-full transition-all duration-300 neon-border"></button>
             </div>
         </div>
     </section>
@@ -1573,7 +1569,7 @@
                     </div>
 
                     <!-- Force GPS Button (always visible for debugging) -->
-                    <button @click="startLocationTracking(true)"
+                    <button x-on:click="startLocationTracking(true)"
                             class="glass-btn-primary glass-btn-sm hover-lift transition-all">
                         <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
@@ -1587,7 +1583,7 @@
             <!-- Category Tabs -->
             <div class="flex flex-wrap justify-center gap-3 mb-8">
                 <template x-for="cat in categories" :key="cat.id">
-                    <button @click="selectedCategory = cat.id; loadVenues()"
+                    <button x-on:click="selectedCategory = cat.id; loadVenues()"
                             :class="selectedCategory === cat.id ? 'glass-btn-primary glass-btn-md shadow-lg scale-105' : 'glass-btn-secondary glass-btn-md'"
                             class="font-semibold transition-all hover-lift flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-html="cat.icon"></svg>
@@ -1600,7 +1596,7 @@
             <div class="mb-8 max-w-5xl mx-auto">
                 <!-- Filter Toggle Button -->
                 <div class="text-center mb-4">
-                    <button @click="showFilters = !showFilters"
+                    <button x-on:click="showFilters = !showFilters"
                             class="glass-btn-secondary glass-btn-md hover-lift transition-all inline-flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
@@ -1628,7 +1624,7 @@
                                 </svg>
                                 Sort By
                             </label>
-                            <select x-model="sortBy" @change="applyFiltersAndSort()"
+                            <select x-model="sortBy" x-on:change="applyFiltersAndSort()"
                                     class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 transition">
                                 <option value="distance">Closest First</option>
                                 <option value="rating">Highest Rated</option>
@@ -1646,7 +1642,7 @@
                                 </svg>
                                 Min Rating
                             </label>
-                            <select x-model="filterRating" @change="applyFiltersAndSort()"
+                            <select x-model="filterRating" x-on:change="applyFiltersAndSort()"
                                     class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 transition">
                                 <option value="0">Any Rating</option>
                                 <option value="3">3+ Stars</option>
@@ -1664,7 +1660,7 @@
                                 </svg>
                                 Price Range
                             </label>
-                            <select x-model="filterPriceLevel" @change="applyFiltersAndSort()"
+                            <select x-model="filterPriceLevel" x-on:change="applyFiltersAndSort()"
                                     class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 transition">
                                 <option :value="null">All Prices</option>
                                 <option value="1">Budget ($)</option>
@@ -1679,7 +1675,7 @@
                     <div class="mt-4 sm:mt-6 flex flex-wrap items-center justify-between gap-3">
                         <!-- Open Now Toggle -->
                         <label class="flex items-center gap-3 cursor-pointer glass-btn-secondary px-4 py-2 rounded-lg hover-lift transition-all">
-                            <input type="checkbox" x-model="filterOpenNow" @change="applyFiltersAndSort()"
+                            <input type="checkbox" x-model="filterOpenNow" x-on:change="applyFiltersAndSort()"
                                    class="w-5 h-5 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer">
                             <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
                                 <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1694,7 +1690,7 @@
                             <span class="text-sm text-gray-600 dark:text-gray-400">
                                 <span x-text="filteredVenuesCount" class="font-bold text-cyan-600 dark:text-cyan-400"></span> results
                             </span>
-                            <button @click="resetFilters()"
+                            <button x-on:click="resetFilters()"
                                     class="glass-btn-warning glass-btn-sm hover-lift transition-all inline-flex items-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -1832,7 +1828,7 @@
 
                 <!-- Pagination Buttons -->
                 <div class="flex items-center gap-2">
-                    <button @click="prevPage()"
+                    <button x-on:click="prevPage()"
                             :disabled="!hasPrevPage"
                             :class="hasPrevPage ? 'glass-btn-primary glass-btn-md' : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed px-4 py-2 rounded-lg'"
                             class="font-semibold transition-all shadow-lg flex items-center gap-2">
@@ -1844,7 +1840,7 @@
 
                     <div class="hidden sm:flex items-center gap-2">
                         <template x-for="page in totalPages" :key="page">
-                            <button @click="currentPage = page; updatePaginatedVenues();"
+                            <button x-on:click="currentPage = page; updatePaginatedVenues();"
                                     :class="currentPage === page ? 'glass-btn-primary' : 'glass-btn-secondary'"
                                     class="w-10 h-10 rounded-lg font-semibold transition-all hover-lift"
                                     x-text="page">
@@ -1856,7 +1852,7 @@
                         Page <span x-text="currentPage"></span> of <span x-text="totalPages"></span>
                     </div>
 
-                    <button @click="nextPage()"
+                    <button x-on:click="nextPage()"
                             :disabled="!hasNextPage"
                             :class="hasNextPage ? 'glass-btn-primary glass-btn-md' : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed px-4 py-2 rounded-lg'"
                             class="font-semibold transition-all shadow-lg flex items-center gap-2">
@@ -1910,7 +1906,7 @@
                 <div>
                     <h4 class="text-lg font-bold mb-4">Contact Us</h4>
                     <ul class="space-y-2 text-sm text-gray-400">
-                        <li><strong class="text-white">Email:</strong><br>9yttrybe@gmail.com</li>
+                        <li><strong class="text-white">Email:</strong><br>9yttrybe@@gmail.com</li>
                         <li><strong class="text-white">Phone:</strong><br>0545566524 / 0267825223</li>
                         <li><strong class="text-white">WhatsApp:</strong><br>0267825223</li>
                     </ul>
@@ -1920,7 +1916,7 @@
                 <div>
                     <h4 class="text-lg font-bold mb-4">Follow Us</h4>
                     <div class="space-y-3">
-                        <a href="https://www.tiktok.com/@9yt.trybe?_r=1&_t=ZM-9191LGZJuSB" target="_blank" class="flex items-center text-gray-400 hover:text-white transition">
+                        <a href="https://www.tiktok.com/@@9yt.trybe?_r=1&_t=ZM-9191LGZJuSB" target="_blank" class="flex items-center text-gray-400 hover:text-white transition">
                             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
                             </svg>
