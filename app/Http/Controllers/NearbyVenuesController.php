@@ -152,7 +152,7 @@ class NearbyVenuesController extends Controller
                         'phone' => $tags['phone'] ?? ($tags['contact:phone'] ?? null),
                         'maps_url' => "https://www.openstreetmap.org/" . $element['type'] . "/" . $element['id'],
                         'photo_reference' => null,
-                        'photo_url' => $this->getCategoryPlaceholderImage($params['category']),
+                        'photo_url' => $this->getCategoryPlaceholderImage($params['category'], $element['id']),
                         'distance_km' => round($distance, 2),
                         'is_open_now' => null,
                         'category' => $params['category'],
@@ -411,16 +411,64 @@ class NearbyVenuesController extends Controller
             || str_contains($message, 'enable billing');
     }
 
-    private function getCategoryPlaceholderImage($category): string
+    private function getCategoryPlaceholderImage($category, $seed = null): string
     {
-        return match($category) {
-            'club' => 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=800&q=80',
-            'restaurant' => 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80',
-            'lounge' => 'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=800&q=80',
-            'arcade' => 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&q=80',
-            'hotel' => 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80',
-            'lodging' => 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80',
-            default => 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&q=80',
-        };
+        $placeholders = [
+            'club' => [
+                'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=800&q=80',
+                'https://images.unsplash.com/photo-1570872626485-d8ffea69f463?w=800&q=80',
+                'https://images.unsplash.com/photo-1545128485-c400e7702796?w=800&q=80',
+                'https://images.unsplash.com/photo-1571266028243-e4733b0f0bb1?w=800&q=80',
+                'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80',
+            ],
+            'restaurant' => [
+                'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80',
+                'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=800&q=80',
+                'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80',
+                'https://images.unsplash.com/photo-1514315384763-ba401779410f?w=800&q=80',
+                'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&q=80',
+                'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800&q=80',
+            ],
+            'lounge' => [
+                'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=800&q=80',
+                'https://images.unsplash.com/photo-1574096079513-d8259312b785?w=800&q=80',
+                'https://images.unsplash.com/photo-1560624052-449f5ddf0c31?w=800&q=80',
+                'https://images.unsplash.com/photo-1597075095400-b31046162232?w=800&q=80',
+            ],
+            'arcade' => [
+                'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&q=80',
+                'https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=800&q=80',
+                'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&q=80',
+                'https://images.unsplash.com/photo-1627850604058-52e40de1b8ed?w=800&q=80',
+            ],
+            'hotel' => [
+                'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80',
+                'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=80',
+                'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&q=80',
+                'https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=800&q=80',
+            ],
+            'lodging' => [
+                'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80',
+                'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+                'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&q=80',
+                'https://images.unsplash.com/photo-1560185007-cde436f6a4d0?w=800&q=80',
+            ],
+            'default' => [
+                'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&q=80',
+                'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80',
+                'https://images.unsplash.com/photo-1514525253344-a812ca920d0f?w=800&q=80',
+            ]
+        ];
+
+        $images = $placeholders[$category] ?? $placeholders['default'];
+        
+        // Use seed to consistently pick the same image for the same venue
+        if ($seed !== null) {
+            // Simple hash of the seed to an index
+            $index = abs(crc32($seed)) % count($images);
+            return $images[$index];
+        }
+
+        return $images[0];
     }
 }
