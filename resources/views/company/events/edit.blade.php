@@ -239,15 +239,31 @@
                                placeholder="e.g., Accra International Conference Centre">
                         @error('venue_name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                     </div>
-                    <div class="mb-4">
+                    <div class="mb-4" x-data="addressAutocomplete()" x-init="init()">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Venue Address <span class="text-red-500">*</span></label>
-                        <input type="text" id="venue_address" name="venue_address" value="{{ old('venue_address', $event->venue_address) }}"
-                               :required="locationType === 'venue'"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                               placeholder="Search for venue address..."
-                               autocomplete="off">
+                        <div class="relative">
+                            <input type="text" id="venue_address" name="venue_address" value="{{ old('venue_address', $event->venue_address) }}"
+                                   :required="locationType === 'venue'"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                   placeholder="Search for venue address..."
+                                   autocomplete="off"
+                                   x-model="query"
+                                   @input.debounce.300ms="searchAddresses()">
+                            
+                            <!-- OSM Suggestions -->
+                            <template x-if="provider === 'osm' && suggestions.length > 0">
+                                <div class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                                    <template x-for="item in suggestions" :key="item.place_id">
+                                        <button type="button" @click="selectAddress(item)" 
+                                                class="w-full text-left px-4 py-2 hover:bg-gray-100 border-b border-gray-100 last:border-0">
+                                            <div class="font-medium text-sm" x-text="item.display_name"></div>
+                                        </button>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
                         <input type="hidden" id="address_validated" value="{{ $event->venue_address ? '1' : '0' }}">
-                        <p class="mt-1 text-xs text-gray-500">Start typing or paste an address, then select from Google Maps suggestions</p>
+                        <p class="mt-1 text-xs text-gray-500" x-text="provider === 'google' ? 'Start typing or paste an address, then select from Google Maps suggestions' : 'Start typing to see suggestions from OpenStreetMap'"></p>
                         @error('venue_address')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                     </div>
                     <!-- Google Map -->
@@ -642,151 +658,169 @@ function ticketManager() {
     }
 }
 
-// Google Maps Integration
+function addressAutocomplete() {
+    return {
+        provider: "{{ config('services.maps.provider', 'osm') }}",
+        query: "{{ old('venue_address', $event->venue_address) }}",
+        suggestions: [],
+        init() {
+            if (this.provider === 'google') {
+                // Google initialization is handled in initMap
+            }
+        },
+        async searchAddresses() {
+            if (this.provider !== 'osm' || this.query.length < 3) {
+                this.suggestions = [];
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(this.query)}&format=json&limit=5&addressdetails=1&accept-language=en`);
+                this.suggestions = await response.json();
+            } catch (error) {
+                console.error('OSM Search error:', error);
+            }
+        },
+        selectAddress(item) {
+            this.query = item.display_name;
+            this.suggestions = [];
+            document.getElementById('address_validated').value = '1';
+            
+            // Update coordinates
+            const lat = parseFloat(item.lat);
+            const lng = parseFloat(item.lon);
+            document.getElementById('venue_latitude').value = lat.toFixed(8);
+            document.getElementById('venue_longitude').value = lng.toFixed(8);
+
+            // Update map
+            if (this.provider === 'osm') {
+                updateOSMMap(lat, lng);
+            }
+        }
+    }
+}
+
+// Maps Integration
 let map;
 let marker;
 let autocomplete;
+const provider = "{{ config('services.maps.provider', 'osm') }}";
 
 function initMap() {
-    // Default location (Accra, Ghana)
-    const defaultLocation = { lat: 5.6037, lng: -0.1870 };
+    if (provider === 'google') {
+        initGoogleMap();
+    } else {
+        initOSMMap();
+    }
+}
 
-    // Initialize map
+function initGoogleMap() {
+    const lat = parseFloat(document.getElementById('venue_latitude').value) || 5.6037;
+    const lng = parseFloat(document.getElementById('venue_longitude').value) || -0.1870;
+    const defaultLocation = { lat, lng };
+
     map = new google.maps.Map(document.getElementById('map'), {
-        center: defaultLocation,
-        zoom: 13,
-        mapTypeControl: true,
-        streetViewControl: true,
-        fullscreenControl: true,
+        center: defaultLocation, zoom: 15,
     });
+    marker = new google.maps.Marker({ map: map, draggable: true, position: defaultLocation });
 
-    // Initialize marker
-    marker = new google.maps.Marker({
-        map: map,
-        draggable: true,
-        animation: google.maps.Animation.DROP,
-    });
-
-    // Initialize autocomplete
     const input = document.getElementById('venue_address');
     autocomplete = new google.maps.places.Autocomplete(input, {
-        fields: ['formatted_address', 'geometry', 'name', 'address_components'],
+        fields: ['formatted_address', 'geometry', 'name'],
         types: ['establishment', 'geocode']
     });
 
-    // Track if address was selected from dropdown
-    let addressSelected = false;
-
-    // When user selects an address from dropdown
     autocomplete.addListener('place_changed', function() {
         const place = autocomplete.getPlace();
-
-        if (!place.geometry || !place.geometry.location) {
-            alert('Please select a valid address from the dropdown suggestions.');
-            document.getElementById('address_validated').value = '0';
-            addressSelected = false;
-            return;
-        }
-
-        // Mark as validated
-        addressSelected = true;
-        document.getElementById('address_validated').value = '1';
-
-        // Update map
-        updateMap(place.geometry.location);
-
-        // Update address field with formatted address
+        if (!place.geometry) return;
+        updateGoogleMap(place.geometry.location);
         input.value = place.formatted_address || place.name;
-
-        // Update coordinates
         document.getElementById('venue_latitude').value = place.geometry.location.lat().toFixed(8);
         document.getElementById('venue_longitude').value = place.geometry.location.lng().toFixed(8);
+        document.getElementById('address_validated').value = '1';
     });
 
-    // Handle paste events - trigger autocomplete
-    input.addEventListener('paste', function(e) {
-        // Reset validation on paste
-        addressSelected = false;
-        document.getElementById('address_validated').value = '0';
-
-        setTimeout(function() {
-            // Trigger autocomplete suggestions after paste
-            const event = new Event('input', { bubbles: true });
-            input.dispatchEvent(event);
-            google.maps.event.trigger(autocomplete, 'place_changed');
-        }, 100);
-    });
-
-    // Handle manual typing - reset validation
-    input.addEventListener('input', function() {
-        if (input.value === '') {
-            addressSelected = false;
-            document.getElementById('address_validated').value = '0';
-        }
-    });
-
-    // Form submission validation
-    const form = input.closest('form');
-    form.addEventListener('submit', function(e) {
-        const locationType = document.querySelector('select[name="location_type"]').value;
-        if (locationType === 'venue') {
-            const addressValue = input.value.trim();
-            const hasCoordinates = document.getElementById('venue_latitude').value &&
-                                  document.getElementById('venue_longitude').value;
-
-            if (addressValue && !hasCoordinates) {
-                e.preventDefault();
-                alert('Please select your venue address from the Google Maps dropdown suggestions.');
-                input.focus();
-                return false;
-            }
-        }
-    });
-
-    // When user drags the marker
     marker.addListener('dragend', function(event) {
-        const position = event.latLng;
-        document.getElementById('venue_latitude').value = position.lat().toFixed(8);
-        document.getElementById('venue_longitude').value = position.lng().toFixed(8);
+        const pos = event.latLng;
+        document.getElementById('venue_latitude').value = pos.lat().toFixed(8);
+        document.getElementById('venue_longitude').value = pos.lng().toFixed(8);
+        reverseGeocode(pos.lat(), pos.lng());
+    });
+}
 
-        // Reverse geocode to get address
+function initOSMMap() {
+    const lat = parseFloat(document.getElementById('venue_latitude').value) || 5.6037;
+    const lng = parseFloat(document.getElementById('venue_longitude').value) || -0.1870;
+
+    map = L.map('map').setView([lat, lng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+    marker.on('dragend', function(event) {
+        const pos = marker.getLatLng();
+        document.getElementById('venue_latitude').value = pos.lat.toFixed(8);
+        document.getElementById('venue_longitude').value = pos.lng.toFixed(8);
+        reverseGeocode(pos.lat, pos.lng);
+    });
+
+    map.on('click', function(e) {
+        marker.setLatLng(e.latlng);
+        document.getElementById('venue_latitude').value = e.latlng.lat.toFixed(8);
+        document.getElementById('venue_longitude').value = e.latlng.lng.toFixed(8);
+        reverseGeocode(e.latlng.lat, e.latlng.lng);
+    });
+}
+
+function updateOSMMap(lat, lng) {
+    if (!map) return;
+    map.setView([lat, lng], 15);
+    marker.setLatLng([lat, lng]);
+}
+
+function reverseGeocode(lat, lng) {
+    if (provider === 'google') {
         const geocoder = new google.maps.Geocoder();
-        geocoder.geocode({ location: position }, function(results, status) {
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
             if (status === 'OK' && results[0]) {
                 document.getElementById('venue_address').value = results[0].formatted_address;
             }
         });
-    });
-
-    // If there are existing values, populate the map
-    const oldLat = document.getElementById('venue_latitude').value;
-    const oldLng = document.getElementById('venue_longitude').value;
-    if (oldLat && oldLng) {
-        updateMap(new google.maps.LatLng(parseFloat(oldLat), parseFloat(oldLng)));
+    } else {
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.display_name) {
+                    document.getElementById('venue_address').value = data.display_name;
+                    document.getElementById('address_validated').value = '1';
+                }
+            });
     }
 }
 
-function updateMap(location) {
+function updateGoogleMap(location) {
     map.setCenter(location);
     map.setZoom(15);
     marker.setPosition(location);
     marker.setVisible(true);
 }
 
-// Load Google Maps API
+// Load appropriate API
 (function() {
-    const apiKey = '{{ env('GOOGLE_MAPS_API_KEY') }}';
-    if (!apiKey) {
-        console.warn('Google Maps API key is not set. Please add GOOGLE_MAPS_API_KEY to your .env file.');
-        document.getElementById('map').innerHTML = '<div class="flex items-center justify-center h-full bg-gray-100 text-gray-600"><p>Google Maps API key not configured. Please add GOOGLE_MAPS_API_KEY to your .env file.</p></div>';
-        return;
+    if (provider === 'google') {
+        const apiKey = '{{ env('GOOGLE_MAPS_API_KEY') }}';
+        if (apiKey) {
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap`;
+            script.async = true; script.defer = true;
+            document.head.appendChild(script);
+        }
+    } else {
+        // OSM/Leaflet is already loaded in layout
+        window.addEventListener('load', initMap);
     }
-
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap`;
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
 })();
 
 // Holiday checkbox toggle

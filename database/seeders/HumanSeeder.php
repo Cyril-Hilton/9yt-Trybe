@@ -50,6 +50,13 @@ class HumanSeeder extends Seeder
                 'slug' => Str::slug(fake()->sentence()),
                 'description' => fake()->paragraph(),
                 'content' => fake()->paragraphs(3, true),
+                'image_path' => match($i % 5) {
+                    0 => 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=80', // Fashion
+                    1 => 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80', // Lifestyle
+                    2 => 'https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?w=800&q=80', // Entertainment
+                    3 => 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&q=80', // Fashion 2
+                    default => 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&q=80', // Lifestyle 2
+                },
                 'source_name' => '9yt !Trybe News',
                 'source_url' => 'https://9yttrybe.com',
                 'author' => fake()->name(),

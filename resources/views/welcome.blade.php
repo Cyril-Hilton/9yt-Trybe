@@ -889,7 +889,8 @@
                             </div>
                         </div>
                     </div>
-                    @elseauth('company')
+                    @else
+                    @auth('company')
                     <div class="flex items-center gap-2 sm:gap-3 md:gap-4">
                         <!-- Global Search Icon with Live Autocomplete -->
                         <div x-data="{ searchOpen: false, query: '', suggestions: [], loading: false, error: '' }" class="relative">
@@ -1143,6 +1144,7 @@
                         <a href="{{ route('user.register') }}" class="glass-btn px-6 py-2 rounded-lg font-semibold transition-all shadow-lg whitespace-nowrap flex-shrink-0" style="white-space: nowrap !important;">Sign&nbsp;Up</a>
                     </div>
                     @endauth
+                    @endauth
 
                     <!-- Dark Mode Toggle -->
                     <button @click="toggleDarkMode()" class="glass-btn p-2 rounded-lg transition-all flex-shrink-0">
@@ -1196,7 +1198,8 @@
                         <button type="submit" class="block w-full text-left px-4 py-2 text-red-600 dark:text-red-400 font-medium bg-red-50/30 dark:bg-red-900/20 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all border border-red-200/30 dark:border-red-800/30">Logout</button>
                     </form>
                 </div>
-                @elseauth('company')
+                @else
+                @auth('company')
                 <div class="border-t border-white/30 dark:border-gray-700/50 pt-2 mt-2">
                     <a href="{{ route('organization.dashboard') }}" class="block px-4 py-2 text-gray-900 dark:text-white font-medium bg-white/30 dark:bg-gray-800/40 hover:bg-white/50 dark:hover:bg-gray-800/70 rounded-xl transition-all border border-white/30 dark:border-gray-700/40 shadow-lg">Dashboard</a>
                     <a href="{{ route('organization.events.index') }}" class="block px-4 py-2 text-gray-900 dark:text-white font-medium bg-white/30 dark:bg-gray-800/40 hover:bg-white/50 dark:hover:bg-gray-800/70 rounded-xl transition-all border border-white/30 dark:border-gray-700/40 shadow-lg">My Events</a>
@@ -1210,6 +1213,7 @@
                     <a href="{{ route('user.login') }}" class="block px-4 py-2 text-gray-900 dark:text-white font-medium bg-white/30 dark:bg-gray-800/40 hover:bg-white/50 dark:hover:bg-gray-800/70 rounded-xl transition-all border border-white/30 dark:border-gray-700/40 shadow-lg">Login</a>
                     <a href="{{ route('user.register') }}" class="glass-btn block px-4 py-2 mt-2 rounded-xl font-semibold text-center transition-all">Sign&nbsp;Up</a>
                 </div>
+                @endauth
                 @endauth
             </div>
         </div>
@@ -1688,7 +1692,7 @@
                         <!-- Results Count & Reset -->
                         <div class="flex items-center gap-3">
                             <span class="text-sm text-gray-600 dark:text-gray-400">
-                                <span x-text="allVenues.length" class="font-bold text-cyan-600 dark:text-cyan-400"></span> results
+                                <span x-text="filteredVenuesCount" class="font-bold text-cyan-600 dark:text-cyan-400"></span> results
                             </span>
                             <button @click="resetFilters()"
                                     class="glass-btn-warning glass-btn-sm hover-lift transition-all inline-flex items-center gap-2">
@@ -1703,9 +1707,20 @@
             </div>
 
             <!-- Loading State -->
-            <div x-show="loading" class="text-center py-12">
-                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600"></div>
-                <p class="mt-4 text-gray-600 dark:text-gray-400">Finding amazing places near you...</p>
+            <div x-show="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <template x-for="i in 3" :key="i">
+                    <div class="glass-card rounded-2xl overflow-hidden animate-pulse">
+                        <div class="h-48 bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="p-6 space-y-4">
+                            <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                            <div class="flex gap-2">
+                                <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+                                <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
             </div>
 
             <!-- Error State -->
@@ -1722,14 +1737,15 @@
                     <div class="glass-card rounded-2xl overflow-hidden hover-lift transition-all group">
                         <!-- Venue Image -->
                         <div class="relative h-48 bg-gradient-to-br from-cyan-500 to-blue-600 overflow-hidden">
-                            <template x-if="venue.photo_reference">
-                                <img :src="`/api/venue-photo/${venue.photo_reference}`"
+                            <template x-if="venue.photo_url || venue.photo_reference">
+                                <img :src="venue.photo_url || `/api/venue-photo/${venue.photo_reference}`"
                                      :alt="venue.name"
-                                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                     @@error="$el.src = 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&q=80'">
                             </template>
-                            <template x-if="!venue.photo_reference">
+                            <template x-if="!venue.photo_url && !venue.photo_reference">
                                 <div class="absolute inset-0 flex items-center justify-center">
-                                    <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-html="getCategoryIcon(selectedCategory)"></svg>
+                                    <svg class="w-16 h-16 text-white opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-html="getCategoryIcon(selectedCategory)"></svg>
                                 </div>
                             </template>
                         </div>
@@ -1797,7 +1813,7 @@
             </div>
 
             <!-- Empty State -->
-            <div x-show="!loading && allVenues.length === 0" class="text-center py-12">
+            <div x-show="!loading && originalVenues.length === 0" class="text-center py-12">
                 <svg class="mx-auto w-16 h-16 text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -1806,12 +1822,12 @@
             </div>
 
             <!-- Pagination -->
-            <div x-show="!loading && allVenues.length > perPage" class="mt-8 flex items-center justify-between">
+            <div x-show="!loading && filteredVenuesCount > perPage" class="mt-8 flex items-center justify-between">
                 <!-- Results Info -->
                 <div class="text-sm text-gray-600 dark:text-gray-400">
                     Showing <span class="font-semibold text-gray-900 dark:text-white" x-text="((currentPage - 1) * perPage) + 1"></span>
-                    to <span class="font-semibold text-gray-900 dark:text-white" x-text="Math.min(currentPage * perPage, allVenues.length)"></span>
-                    of <span class="font-semibold text-gray-900 dark:text-white" x-text="allVenues.length"></span> venues
+                    to <span class="font-semibold text-gray-900 dark:text-white" x-text="Math.min(currentPage * perPage, filteredVenuesCount)"></span>
+                    of <span class="font-semibold text-gray-900 dark:text-white" x-text="filteredVenuesCount"></span> venues
                 </div>
 
                 <!-- Pagination Buttons -->
@@ -2015,12 +2031,12 @@
                 categories: [
                     { id: 'club', name: 'Nightclubs', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>' },
                     { id: 'lodging', name: 'Airbnbs', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>' },
-                    { id: 'restaurant', name: 'Restaurants', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>' },
-                    { id: 'lounge', name: 'Lounges', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>' },
-                    { id: 'arcade', name: 'Arcades', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>' },
+                    { id: 'restaurant', name: 'Restaurants', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>' },
+                    { id: 'lounge', name: 'Lounges', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a2 2 0 01-2-2V5a2 2 0 012-2h5a2 2 0 012 2v14a2 2 0 01-2 2h-5z M9 18h12 M9 14h12 M9 10h12"/>' },
+                    { id: 'arcade', name: 'Arcades', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5V7M9 5V7M7 12H17M7 17H17M5 20H19C20.1046 20 21 19.1046 21 18V6C21 4.89543 20.1046 4 19 4H5C3.89543 4 3 4.89543 3 6V18C3 19.1046 3.89543 20 5 20Z"/>' },
                     { id: 'hotel', name: 'Hotels', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>' }
                 ],
-                allVenues: [],
+                originalVenues: [],
                 venues: [],
                 loading: false,
                 errorMessage: '',
@@ -2185,22 +2201,33 @@
                     this.userCity = detectCity(this.userLat, this.userLng);
                     console.log('📍 City detected from GPS:', this.userCity, `(${this.userLat.toFixed(4)}, ${this.userLng.toFixed(4)})`);
 
-                    // Try reverse geocoding for more specific name (optional enhancement)
+                    // Try reverse geocoding for more specific name (using Nominatim for OSM)
                     try {
-                        const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${this.userLat},${this.userLng}&key={{ config('services.google.maps_api_key') }}`);
-                        const data = await response.json();
+                        const provider = "{{ config('services.maps.provider', 'osm') }}";
+                        if (provider === 'google') {
+                            const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${this.userLat},${this.userLng}&key={{ config('services.google.maps_api_key') }}`);
+                            const data = await response.json();
 
-                        if (data.status === 'OK' && data.results && data.results[0]) {
-                            const cityComponent = data.results[0].address_components.find(c => c.types.includes('locality'));
-                            const areaComponent = data.results[0].address_components.find(c => c.types.includes('sublocality'));
+                            if (data.status === 'OK' && data.results && data.results[0]) {
+                                const cityComponent = data.results[0].address_components.find(c => c.types.includes('locality'));
+                                const areaComponent = data.results[0].address_components.find(c => c.types.includes('sublocality'));
 
-                            if (areaComponent || cityComponent) {
-                                this.userCity = areaComponent?.long_name || cityComponent?.long_name;
-                                console.log('✨ Enhanced location from Google:', this.userCity);
+                                if (areaComponent || cityComponent) {
+                                    this.userCity = areaComponent?.long_name || cityComponent?.long_name;
+                                    console.log('✨ Enhanced location from Google:', this.userCity);
+                                }
+                            }
+                        } else {
+                            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${this.userLat}&lon=${this.userLng}&format=json&accept-language=en`);
+                            const data = await response.json();
+
+                            if (data && data.address) {
+                                this.userCity = data.address.city || data.address.town || data.address.village || data.address.suburb || this.userCity;
+                                console.log('✨ Enhanced location from Nominatim:', this.userCity);
                             }
                         }
                     } catch (error) {
-                        console.log('ℹ️ Using coordinate-based detection (Google API unavailable)');
+                        console.log('ℹ️ Using coordinate-based detection (Geocoding API unavailable)');
                     }
 
                     // Load venues with new location
@@ -2223,6 +2250,8 @@
                     this.loading = true;
                     this.errorMessage = '';
                     this.currentPage = 1; // Reset to first page
+                    console.log(`🔍 Loading venues for: ${this.userCity} (${this.selectedCategory})`);
+                    
                     try {
                         const controller = new AbortController();
                         const timeoutId = setTimeout(() => controller.abort(), 20000);
@@ -2236,11 +2265,12 @@
                         }
 
                         const data = await response.json();
-                        this.allVenues = data.places || [];
+                        this.originalVenues = data.places || [];
+                        console.log(`✅ Loaded ${this.originalVenues.length} venues`);
                         this.applyFiltersAndSort();
                     } catch (error) {
-                        console.error('Failed to load venues:', error);
-                        this.allVenues = [];
+                        console.error('❌ Failed to load venues:', error);
+                        this.originalVenues = [];
                         this.venues = [];
                         this.errorMessage = error && error.name === 'AbortError'
                             ? 'Nearby venues request timed out. Please try again.'
@@ -2251,8 +2281,10 @@
                 },
 
                 applyFiltersAndSort() {
-                    // Start with all venues
-                    let filtered = [...this.allVenues];
+                    // Start with all original venues
+                    let filtered = [...this.originalVenues];
+
+                    console.log(`🧪 Applying filters to ${filtered.length} venues...`);
 
                     // Filter by open now
                     if (this.filterOpenNow) {
@@ -2287,16 +2319,20 @@
                         }
                     });
 
-                    // Update filtered venues and reset pagination
-                    this.allVenues = filtered;
+                    // Update paginated view and reset pagination
                     this.currentPage = 1;
+                    
+                    // We need a helper to store the FULL filtered list for pagination UI
+                    this.filteredVenuesCount = filtered.length;
+                    this.allFilteredVenues = filtered; // Keep the filtered list for pagination
+                    
                     this.updatePaginatedVenues();
                 },
 
                 updatePaginatedVenues() {
                     const start = (this.currentPage - 1) * this.perPage;
                     const end = start + this.perPage;
-                    this.venues = this.allVenues.slice(start, end);
+                    this.venues = (this.allFilteredVenues || []).slice(start, end);
                 },
 
                 resetFilters() {
@@ -2308,7 +2344,7 @@
                 },
 
                 get totalPages() {
-                    return Math.ceil(this.allVenues.length / this.perPage);
+                    return Math.ceil((this.allFilteredVenues?.length || 0) / this.perPage);
                 },
 
                 get hasPrevPage() {

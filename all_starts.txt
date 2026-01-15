@@ -1,0 +1,18 @@
+746:                    @auth
+893:                    @auth('company')
+1192:                @auth
+1202:                @auth('company')
+1286:                        @if(request('filter'))
+1293:                            @foreach($regions as $region)
+1306:                @if(request('region'))
+1323:                        @php
+1351:                        @foreach($featuredCategories as $category)
+1397:        @if($events->count() > 0)
+1399:            @foreach($events as $event)
+1404:                        @if($event->banner_image)
+1429:                            @if($event->location_type === 'venue')
+1449:                            @if($event->hasFreeTickets())
+1473:        @if($events->count() > 0)
+1502:            @if(!empty($newsArticles))
+1504:                    @foreach(array_slice($newsArticles, 0, 6) as $article)
+1506:                            @if(!empty($article['image']))

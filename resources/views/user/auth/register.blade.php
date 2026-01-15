@@ -28,7 +28,7 @@
     @endif
 
     <form class="mt-8 space-y-6" action="{{ route('user.register') }}" method="POST"
-        x-data="{ showPassword: false, showConfirm: false, countryCode: '{{ old('country_code', '+233') }}' }">
+        x-data="{ showPassword: false, showConfirm: false }">
         @csrf
         @if(request('redirect'))
         <input type="hidden" name="redirect" value="{{ request('redirect') }}">
@@ -75,29 +75,17 @@
                 <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Phone Number <span class="text-red-500">*</span>
                 </label>
-                <div class="flex gap-2">
-                    <select
-                        id="country_code"
-                        name="country_code"
-                        x-model="countryCode"
-                        class="w-28 px-2 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:ring-cyan-500 focus:border-cyan-500"
-                    >
-                        <option value="+233">+233 GH</option>
-                        <option value="+234">+234 NG</option>
-                        <option value="+27">+27 ZA</option>
-                        <option value="+44">+44 UK</option>
-                        <option value="+1">+1 US</option>
-                    </select>
+                <div class="relative">
                     <input
                         id="phone"
                         name="phone"
                         type="tel"
                         required
                         value="{{ old('phone') }}"
-                        class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 @error('phone') border-red-500 @enderror"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 @error('phone') border-red-500 @enderror"
                         placeholder="Phone number"
-                        @blur="if ($el.value && $el.value.charAt(0) !== '+') { $el.value = `${countryCode}${$el.value.replace(/^0+/, '')}` }"
                     >
+                    <input type="hidden" name="full_phone" id="full_phone">
                 </div>
                 @error('phone')
                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -178,4 +166,31 @@
         </div>
     </form>
 </div>
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const phoneInput = document.querySelector("#phone");
+        const fullPhoneInput = document.querySelector("#full_phone");
+
+        const iti = window.intlTelInput(phoneInput, {
+            initialCountry: "gh",
+            separateDialCode: true,
+            utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/js/utils.js"
+        });
+
+        // Update hidden field on change
+        phoneInput.addEventListener('change', function() {
+            fullPhoneInput.value = iti.getNumber();
+        });
+
+        phoneInput.addEventListener('keyup', function() {
+            fullPhoneInput.value = iti.getNumber();
+        });
+
+        // Final check before submit
+        phoneInput.closest('form').addEventListener('submit', function() {
+            fullPhoneInput.value = iti.getNumber();
+        });
+    });
+</script>
 @endsection

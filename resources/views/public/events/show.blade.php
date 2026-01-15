@@ -331,15 +331,36 @@ echo json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                             @if($event->venue_address)
                             <p class="text-gray-600 dark:text-gray-400 mb-4">{{ $event->venue_address }}</p>
                             @if($event->venue_latitude && $event->venue_longitude)
-                            <div class="mt-4 h-64 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
-                                <iframe
-                                    width="100%"
-                                    height="100%"
-                                    frameborder="0"
-                                    style="border:0"
-                                    src="https://www.google.com/maps?q={{ $event->venue_latitude }},{{ $event->venue_longitude }}&output=embed"
-                                    allowfullscreen>
-                                </iframe>
+                            <div class="mt-4 h-64 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden border border-cyan-200 dark:border-cyan-800">
+                                <div id="show_map" class="w-full h-full"></div>
+                                @if(config('services.maps.provider', 'osm') === 'google')
+                                <script>
+                                    function initShowMap() {
+                                        const loc = { lat: {{ $event->venue_latitude }}, lng: {{ $event->venue_longitude }} };
+                                        const map = new google.maps.Map(document.getElementById('show_map'), {
+                                            zoom: 15,
+                                            center: loc,
+                                        });
+                                        new google.maps.Marker({
+                                            position: loc,
+                                            map: map,
+                                        });
+                                    }
+                                </script>
+                                <script src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}&callback=initShowMap" async defer></script>
+                                @else
+                                <script>
+                                    document.addEventListener('DOMContentLoaded', function() {
+                                        const lat = {{ $event->venue_latitude }};
+                                        const lng = {{ $event->venue_longitude }};
+                                        const map = L.map('show_map').setView([lat, lng], 15);
+                                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                            attribution: '&copy; OpenStreetMap contributors'
+                                        }).addTo(map);
+                                        L.marker([lat, lng]).addTo(map);
+                                    });
+                                </script>
+                                @endif
                             </div>
                             @endif
                             @endif

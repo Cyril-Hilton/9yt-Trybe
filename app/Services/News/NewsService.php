@@ -18,8 +18,13 @@ class NewsService
 
         return Cache::remember($cacheKey, now()->addMinutes($cacheMinutes), function () use ($provider, $query) {
             $localArticles = $this->fetchLocalArticles($query);
-            $externalArticles = [];
+            
+            // If provider is local, don't even try external to save time/resources
+            if ($provider === 'local') {
+                return $localArticles;
+            }
 
+            $externalArticles = [];
             try {
                 if ($provider === 'x') {
                     $externalArticles = $this->fetchFromX($query);
@@ -65,35 +70,38 @@ class NewsService
             return [];
         }
 
+        $externalArticles = [];
+        $url = "{$baseUrl}/search";
+        $params = [
+            'q' => $query,
+            'lang' => $language,
+            'max' => $max,
+            'token' => $apiKey,
+        ];
+
         try {
-            $response = Http::timeout(3)->get("{$baseUrl}/search", [
-                'q' => $query,
-                'lang' => $language,
-                'max' => $max,
-                'token' => $apiKey,
-            ]);
-        } catch (\Throwable $e) {
-            return [];
+            $response = Http::timeout(5)->get($url, $params);
+            
+            if ($response->successful()) {
+                $articles = $response->json()['articles'] ?? [];
+                
+                foreach ($articles as $article) {
+                    $externalArticles[] = [
+                        'title' => $article['title'] ?? '',
+                        'description' => $article['description'] ?? '',
+                        'url' => $article['url'] ?? '',
+                        'image' => $article['image'] ?? $article['urlToImage'] ?? '',
+                        'source' => $article['source']['name'] ?? 'GNews',
+                        'published_at' => $article['publishedAt'] ?? now()->toIso8601String(),
+                        'author' => $article['source']['name'] ?? 'Editorial',
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::warning("Failed to fetch from GNews: " . $e->getMessage());
         }
 
-        if (!$response->ok()) {
-            return [];
-        }
-
-        $payload = $response->json();
-        $articles = $payload['articles'] ?? [];
-
-        return collect($articles)->map(function (array $article) {
-            return [
-                'title' => $article['title'] ?? '',
-                'description' => $article['description'] ?? '',
-                'url' => $article['url'] ?? '',
-                'image' => $article['image'] ?? '',
-                'source' => $article['source']['name'] ?? 'Unknown',
-                'published_at' => $article['publishedAt'] ?? '',
-                'author' => $article['source']['name'] ?? 'Unknown',
-            ];
-        })->values()->all();
+        return $externalArticles;
     }
 
     private function fetchFromNewsApi(string $query): array
@@ -108,7 +116,7 @@ class NewsService
         }
 
         try {
-            $response = Http::timeout(3)->get("{$baseUrl}/everything", [
+            $response = Http::timeout(5)->get("{$baseUrl}/everything", [
                 'q' => $query,
                 'language' => $language,
                 'pageSize' => $max,
@@ -206,11 +214,21 @@ class NewsService
             ];
         }
 
+        // Limit feeds to process to prevent timeout (max 5 feeds per hit)
+        // Shuffle to get varied content on different cache refreshes
+        $feedsToProcess = collect($feeds)->shuffle()->take(5)->all();
         $articles = [];
+        $startTime = microtime(true);
 
-        foreach ($feeds as $feedUrl) {
+        foreach ($feedsToProcess as $feedUrl) {
+            // Check if we are running out of time (30s limit - 5s buffer)
+            if (microtime(true) - $startTime > 25) {
+                break;
+            }
+
             try {
-                $response = Http::timeout(3)->get($feedUrl);
+                // Reduced timeout per feed to 1.5 seconds
+                $response = Http::timeout(1.5)->get($feedUrl);
                 if (!$response->ok()) {
                     continue;
                 }
@@ -265,30 +283,70 @@ class NewsService
 
     private function fetchLocalArticles(?string $query = null): array
     {
-        $queryBuilder = Article::where('is_published', true);
+        try {
+            $queryBuilder = Article::where('is_published', true);
 
-        if ($query) {
-            $queryBuilder->where(function ($q) use ($query) {
-                $q->where('title', 'like', "%{$query}%")
-                  ->orWhere('description', 'like', "%{$query}%")
-                  ->orWhere('content', 'like', "%{$query}%");
-            });
+            if ($query) {
+                $defaultQuery = trim(config('services.news.default_query'));
+                $currentQuery = trim($query);
+
+                // If query matches default, return all published articles
+                if ($currentQuery === $defaultQuery || empty($currentQuery)) {
+                    return $queryBuilder->orderBy('published_at', 'desc')
+                        ->limit(20)
+                        ->get()
+                        ->map(function ($article) {
+                            return [
+                                'title' => $article->title,
+                                'description' => $article->description,
+                                'url' => route('events.index'), // Fallback if no news details page
+                                'image' => $article->image_url ?? '',
+                                'source' => $article->source_name,
+                                'published_at' => $article->published_at ? $article->published_at->toIso8601String() : now()->toIso8601String(),
+                                'author' => $article->author,
+                            ];
+                        })
+                        ->toArray();
+                }
+
+                // Handle composite queries (e.g., "fashion OR lifestyle")
+                if (str_contains($currentQuery, ' OR ')) {
+                    $terms = explode(' OR ', $currentQuery);
+                    $queryBuilder->where(function ($q) use ($terms) {
+                        foreach ($terms as $term) {
+                            $term = trim($term);
+                            $q->orWhere('title', 'like', "%{$term}%")
+                              ->orWhere('description', 'like', "%{$term}%")
+                              ->orWhere('content', 'like', "%{$term}%");
+                        }
+                    });
+                } else {
+                    $queryBuilder->where(function ($q) use ($query) {
+                        $q->where('title', 'like', "%{$query}%")
+                          ->orWhere('description', 'like', "%{$query}%")
+                          ->orWhere('content', 'like', "%{$query}%");
+                    });
+                }
+            }
+
+            return $queryBuilder->orderBy('published_at', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(function ($article) {
+                    return [
+                        'title' => $article->title,
+                        'description' => $article->description,
+                        'url' => route('events.index'), // Or a dedicated article page if exists
+                        'image' => $article->image_url ?? '', // Use accessor
+                        'source' => $article->source_name,
+                        'published_at' => $article->published_at ? $article->published_at->toIso8601String() : now()->toIso8601String(),
+                        'author' => $article->author,
+                    ];
+                })
+                ->toArray();
+        } catch (\Throwable $e) {
+            report($e);
+            return [];
         }
-
-        return $queryBuilder->orderBy('published_at', 'desc')
-            ->limit(10)
-            ->get()
-            ->map(function ($article) {
-                return [
-                    'title' => $article->title,
-                    'description' => $article->description,
-                    'url' => route('events.index'), // Or a dedicated article page if exists, for now custom articles might point to home or a placeholder
-                    'image' => $article->image_url ?? '', // Use accessor
-                    'source' => $article->source_name,
-                    'published_at' => $article->published_at ? $article->published_at->toIso8601String() : now()->toIso8601String(),
-                    'author' => $article->author,
-                ];
-            })
-            ->toArray();
     }
 }

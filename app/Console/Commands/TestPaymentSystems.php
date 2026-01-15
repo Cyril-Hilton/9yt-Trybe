@@ -39,8 +39,8 @@ class TestPaymentSystems extends Command
         $allPassed = $this->testEmailConfiguration() && $allPassed;
         $this->newLine();
 
-        // Test 6: Google Maps Configuration
-        $allPassed = $this->testGoogleMapsConfiguration() && $allPassed;
+        // Test 6: Maps Configuration
+        $allPassed = $this->testMapsConfiguration() && $allPassed;
         $this->newLine();
 
         // Final Summary
@@ -225,20 +225,33 @@ class TestPaymentSystems extends Command
         return $passed;
     }
 
-    protected function testGoogleMapsConfiguration(): bool
+    protected function testMapsConfiguration(): bool
     {
-        $this->info('6️⃣  Testing Google Maps Configuration...');
+        $this->info('6️⃣  Testing Maps Configuration...');
 
-        $apiKey = config('services.google.maps_api_key');
+        $enabled = config('services.maps.enabled', true);
+        $provider = config('services.maps.provider', 'osm');
+        $googleKey = config('services.google.maps_api_key');
 
-        if (empty($apiKey)) {
-            $this->warn('   ⚠️  Google Maps API key not configured');
-            $this->warn('   Address autocomplete will not work');
-            $this->warn('   Set GOOGLE_MAPS_API_KEY in .env file');
-            return false;
+        $this->info('   ℹ️  Maps Enabled: ' . ($enabled ? 'Yes' : 'No'));
+        $this->info('   ℹ️  Maps Provider: ' . strtoupper($provider));
+
+        if (!$enabled) {
+            $this->warn('   ⚠️  Map functionality is DISABLED globally');
+            return true;
         }
 
-        $this->info('   ✅ Google Maps API key configured');
+        if ($provider === 'google') {
+            if (empty($googleKey)) {
+                $this->error('   ❌ Google Maps API key not configured');
+                $this->warn('   Set GOOGLE_MAPS_API_KEY in .env file');
+                return false;
+            }
+            $this->info('   ✅ Google Maps API key configured');
+        } else {
+            $this->info('   ✅ OpenStreetMap/Leaflet provider active (no API key required)');
+        }
+
         return true;
     }
 }

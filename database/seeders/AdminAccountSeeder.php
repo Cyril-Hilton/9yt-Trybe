@@ -26,6 +26,7 @@ class AdminAccountSeeder extends Seeder
                 'name' => '9yt !Trybe Admin',
                 'email' => '9yttrybe@gmail.com',
                 'password' => Hash::make('Justbe999!'),
+                'role' => 'super_admin',
                 'is_super_admin' => true,
             ]
         );

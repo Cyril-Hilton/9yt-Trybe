@@ -267,8 +267,8 @@ class SearchController extends Controller
         $suggestions = collect();
         $queryLower = strtolower($query);
         $isShortQuery = strlen($query) <= 2;
-        $primaryTake = $isShortQuery ? 3 : 5;
-        $secondaryTake = $isShortQuery ? 0 : 3;
+        $primaryTake = $isShortQuery ? 5 : 8;
+        $secondaryTake = $isShortQuery ? 3 : 5;
         $likeAny = '%' . $query . '%';
         $likePrefix = $query . '%';
 
@@ -312,14 +312,10 @@ class SearchController extends Controller
 
         try {
             $events = Event::where('status', 'approved')
-                ->where(function ($q) use ($isShortQuery, $likeAny, $likePrefix) {
-                    if ($isShortQuery) {
-                        $q->where('title', 'LIKE', $likePrefix);
-                    } else {
+                ->where(function ($q) use ($likeAny) {
                         $q->where('title', 'LIKE', $likeAny)
                           ->orWhere('venue_name', 'LIKE', $likeAny)
                           ->orWhere('summary', 'LIKE', $likeAny);
-                    }
                 })
                 ->select('id', 'title', 'slug', 'start_date', 'banner_image', 'venue_name')
                 ->with('company:id,name')
@@ -351,13 +347,9 @@ class SearchController extends Controller
                 })
                 ->whereNotNull('slug')
                 ->where('slug', '!=', '')
-                ->where(function ($q) use ($isShortQuery, $likeAny, $likePrefix) {
-                    if ($isShortQuery) {
-                        $q->where('name', 'LIKE', $likePrefix);
-                    } else {
+                ->where(function ($q) use ($likeAny) {
                         $q->where('name', 'LIKE', $likeAny)
                           ->orWhere('description', 'LIKE', $likeAny);
-                    }
                 })
                 ->select('id', 'name', 'logo', 'slug')
                 ->take($primaryTake)
@@ -381,13 +373,9 @@ class SearchController extends Controller
         // Get categories
         try {
             $categories = Category::where('is_active', true)
-                ->where(function ($q) use ($isShortQuery, $likeAny, $likePrefix) {
-                    if ($isShortQuery) {
-                        $q->where('name', 'LIKE', $likePrefix);
-                    } else {
+                ->where(function ($q) use ($likeAny) {
                         $q->where('name', 'LIKE', $likeAny)
                           ->orWhere('description', 'LIKE', $likeAny);
-                    }
                 })
                 ->select('id', 'name', 'slug', 'color')
                 ->withCount('events')
@@ -410,7 +398,7 @@ class SearchController extends Controller
         }
 
         // Get polls - skip if Poll model doesn't exist or route doesn't exist
-        if (!$isShortQuery && class_exists('App\Models\Poll')) {
+        if (class_exists('App\Models\Poll')) {
             try {
                 $polls = Poll::where('status', 'active')
                     ->where(function ($q) use ($query) {
@@ -438,7 +426,7 @@ class SearchController extends Controller
         }
 
         // Get contestants - skip if Contestant model doesn't exist
-        if (!$isShortQuery && class_exists('App\Models\Contestant')) {
+        if (class_exists('App\Models\Contestant')) {
             try {
                 $contestants = Contestant::where('status', 'active')
                     ->where(function ($q) use ($query) {
@@ -472,13 +460,9 @@ class SearchController extends Controller
         try {
             $products = ShopProduct::where('status', 'approved')
                 ->where('is_active', true)
-                ->where(function ($q) use ($isShortQuery, $likeAny, $likePrefix) {
-                    if ($isShortQuery) {
-                        $q->where('name', 'LIKE', $likePrefix);
-                    } else {
+                ->where(function ($q) use ($likeAny) {
                         $q->where('name', 'LIKE', $likeAny)
                           ->orWhere('description', 'LIKE', $likeAny);
-                    }
                 })
                 ->select('id', 'name', 'slug', 'image_path', 'price')
                 ->take($primaryTake)
@@ -543,6 +527,32 @@ class SearchController extends Controller
                 ];
             });
         $suggestions = $suggestions->concat($conferences);
+
+        // Get News Articles
+        try {
+            $articles = \App\Models\Article::where('is_published', true)
+                ->where(function ($q) use ($query) {
+                    $q->where('title', 'LIKE', "%{$query}%")
+                      ->orWhere('description', 'LIKE', "%{$query}%");
+                })
+                ->select('id', 'title', 'slug', 'image_path', 'source_name')
+                ->take($secondaryTake)
+                ->get()
+                ->map(function ($article) {
+                    return [
+                        'type' => 'news',
+                        'icon' => 'newspaper',
+                        'id' => $article->id,
+                        'title' => $article->title,
+                        'subtitle' => 'News from ' . $article->source_name,
+                        'url' => route('news.index'), // Update if dedicated route exists
+                        'image' => $article->image_url ?? null,
+                    ];
+                });
+            $suggestions = $suggestions->concat($articles);
+        } catch (\Exception $e) {
+            // Article table might not exist in production yet
+        }
 
         // Add "see all results" option
         if ($suggestions->count() > 0) {

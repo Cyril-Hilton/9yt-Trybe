@@ -40,6 +40,7 @@ class TestSeeder extends Seeder
                 'end_date' => Carbon::now()->addDays(5)->addHours(4),
                 'venue_name' => 'Independence Square',
                 'venue_address' => 'Accra, Ghana',
+                'banner_image' => 'https://images.unsplash.com/photo-1592198084033-aade902d1aae?w=1200&q=80',
                 'status' => 'approved', // CRITICAL for search
                 'location_type' => 'venue',
                 'created_at' => now(),

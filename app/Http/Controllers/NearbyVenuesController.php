@@ -8,11 +8,15 @@ use Illuminate\Support\Facades\Cache;
 
 class NearbyVenuesController extends Controller
 {
+    private $provider;
+    private $mapsEnabled;
     private $apiKey;
 
     public function __construct()
     {
         $this->apiKey = config('services.google.maps_api_key');
+        $this->provider = config('services.maps.provider', 'osm');
+        $this->mapsEnabled = config('services.maps.enabled', true);
     }
 
     /**
@@ -23,7 +27,15 @@ class NearbyVenuesController extends Controller
         // Increase execution time for this API call to handle multiple requests
         set_time_limit(120);
 
-        if (!$this->apiKey) {
+        if (!$this->mapsEnabled) {
+            return response()->json([
+                'places' => [],
+                'total_results' => 0,
+                'error' => 'Map functionality is currently disabled.',
+            ]);
+        }
+
+        if ($this->provider === 'google' && !$this->apiKey) {
             return response()->json([
                 'places' => [],
                 'total_results' => 0,
@@ -51,184 +63,218 @@ class NearbyVenuesController extends Controller
             return response()->json($cached);
         }
 
-        $response = $this->fetchFromGooglePlaces($validated);
+        if ($this->provider === 'google') {
+            $response = $this->fetchFromGooglePlaces($validated);
+        } else {
+            $response = $this->fetchFromOSM($validated);
+        }
+
         $payload = $response->getData(true);
-        Cache::put($cacheKey, $payload, now()->addMinutes(5));
+        Cache::put($cacheKey, $payload, now()->addMinutes(15)); // Cache for 15 mins for OSM
 
         return $response;
     }
 
     /**
-     * Fetch from Google Places API (Using legacy nearbysearch - more compatible)
+     * Fetch from OpenStreetMap using Overpass API
      */
-    private function fetchFromGooglePlaces($params)
+    private function fetchFromOSM($params)
     {
-        $searchConfigs = array_slice($this->getSearchConfigs($params['category']), 0, 3);
-        $radius = $params['radius'] ?? 50000; // 50km for better coverage
-
         $userLat = $params['lat'];
         $userLng = $params['lng'];
+        $radiusKm = ($params['radius'] ?? 50000) / 1000;
+        $radiusMeters = $params['radius'] ?? 50000;
 
-        // Use legacy Places API nearbysearch endpoint
-        $url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+        // Map categories to OSM tags
+        $tagConfigs = $this->getOSMTagConfigs($params['category']);
+
+        // List of Overpass API servers for redundancy
+        $overpassServers = [
+            'https://overpass-api.de/api/interpreter',
+            'https://overpass.kumi.systems/api/interpreter',
+            'https://overpass.n.ey.pw/api/interpreter',
+            'https://overpass.be/api/interpreter'
+        ];
 
         $allPlaces = [];
-        $seenPlaceIds = [];
+        $lastException = null;
 
-        // Execute multiple searches to get comprehensive results
-        foreach ($searchConfigs as $config) {
-            $nextPageToken = null;
-            $searchPlaces = [];
-            $pagesFetched = 0;
-            $maxPages = 1; // Limit to 1 page per search to avoid timeout
-
-            // Fetch pages for this search configuration
-            do {
-                // Add next page token if available (must wait before using it)
-                if ($nextPageToken) {
-                    sleep(2); // Required delay by Google API before using page token
-                    $requestParams = [
-                        'pagetoken' => $nextPageToken,
-                        'key' => $this->apiKey
-                    ];
-                } else {
-                    // First page request
-                    $requestParams = [
-                        'location' => "{$userLat},{$userLng}",
-                        'radius' => $radius,
-                        'key' => $this->apiKey
-                    ];
-
-                    // Add type or keyword based on config
-                    if (isset($config['type'])) {
-                        $requestParams['type'] = $config['type'];
-                    }
-                    if (isset($config['keyword'])) {
-                        $requestParams['keyword'] = $config['keyword'];
-                    }
+        // Try servers until one works
+        foreach ($overpassServers as $overpassUrl) {
+            try {
+                // Build Overpass QL query
+                $query = "[out:json][timeout:25];\n(\n";
+                foreach ($tagConfigs as $config) {
+                    $tagValue = $config['value'];
+                    $tagName = $config['name'];
+                    $query .= "  node[\"{$tagName}\"=\"{$tagValue}\"](around:{$radiusMeters}, {$userLat}, {$userLng});\n";
+                    $query .= "  way[\"{$tagName}\"=\"{$tagValue}\"](around:{$radiusMeters}, {$userLat}, {$userLng});\n";
+                    $query .= "  relation[\"{$tagName}\"=\"{$tagValue}\"](around:{$radiusMeters}, {$userLat}, {$userLng});\n";
                 }
+                $query .= ");\nout center;";
 
-                $response = Http::timeout(8)->get($url, $requestParams);
+                $response = Http::timeout(15)->asForm()->post($overpassUrl, ['data' => $query]);
 
                 if ($response->failed()) {
-                    \Log::error('Google Places API HTTP Error', [
-                        'http_status' => $response->status(),
-                        'category' => $params['category'],
-                        'config' => $config,
-                        'error_body' => $response->body()
-                    ]);
-                    break;
+                    continue; // Try next server
                 }
 
                 $data = $response->json();
+                $elements = $data['elements'] ?? [];
 
-                if (($data['status'] ?? null) === 'REQUEST_DENIED' || ($data['status'] ?? null) === 'INVALID_REQUEST') {
-                    $errorMessage = $data['error_message'] ?? 'Google Places request denied.';
-                    \Log::error('Google Places API Request Denied', [
-                        'api_status' => $data['status'] ?? 'unknown',
-                        'error_message' => $errorMessage,
+                foreach ($elements as $element) {
+                    $lat = $element['lat'] ?? ($element['center']['lat'] ?? null);
+                    $lon = $element['lon'] ?? ($element['center']['lon'] ?? null);
+
+                    if ($lat === null || $lon === null) continue;
+
+                    $distance = $this->calculateDistance($userLat, $userLng, $lat, $lon);
+                    $tags = $element['tags'] ?? [];
+                    
+                    // Construct address from tags
+                    $addressParts = [];
+                    if (isset($tags['addr:street'])) $addressParts[] = $tags['addr:street'] . (isset($tags['addr:housenumber']) ? ' ' . $tags['addr:housenumber'] : '');
+                    if (isset($tags['addr:suburb'])) $addressParts[] = $tags['addr:suburb'];
+                    if (isset($tags['addr:city'])) $addressParts[] = $tags['addr:city'];
+                    
+                    $address = implode(', ', $addressParts);
+                    if (empty($address)) $address = $params['category'] . ' near ' . $userLat . ', ' . $userLng;
+
+                    $allPlaces[] = [
+                        'id' => $element['type'] . '/' . $element['id'],
+                        'name' => $tags['name'] ?? 'Unnamed ' . ucfirst($params['category']),
+                        'address' => $address,
+                        'latitude' => $lat,
+                        'longitude' => $lon,
+                        'rating' => isset($tags['rating']) ? (float)$tags['rating'] : null,
+                        'user_ratings_total' => 0,
+                        'price_level' => null,
+                        'phone' => $tags['phone'] ?? ($tags['contact:phone'] ?? null),
+                        'maps_url' => "https://www.openstreetmap.org/" . $element['type'] . "/" . $element['id'],
+                        'photo_reference' => null,
+                        'photo_url' => $this->getCategoryPlaceholderImage($params['category']),
+                        'distance_km' => round($distance, 2),
+                        'is_open_now' => null,
                         'category' => $params['category'],
-                        'config' => $config
-                    ]);
-                    return response()->json([
-                        'places' => [],
-                        'total_results' => 0,
-                        'error' => $errorMessage,
-                        'billing_off' => $this->isBillingDisabled($errorMessage),
-                    ]);
+                    ];
                 }
 
-                if (isset($data['error_message'])) {
-                    \Log::error('Google Places API Response Error', [
-                        'api_status' => $data['status'] ?? 'unknown',
-                        'error_message' => $data['error_message'],
-                        'category' => $params['category'],
-                        'config' => $config
-                    ]);
-                    break;
-                }
+                $sortedPlaces = collect($allPlaces)->sortBy('distance_km')->values()->toArray();
 
-                // Log if we got results for this search
-                $resultCount = count($data['results'] ?? []);
-                if ($resultCount > 0) {
-                    \Log::debug('Search config returned results', [
-                        'category' => $params['category'],
-                        'config' => $config,
-                        'result_count' => $resultCount,
-                        'has_next_page' => isset($data['next_page_token']),
-                        'page' => $pagesFetched + 1
-                    ]);
-                }
+                return response()->json([
+                    'places' => $sortedPlaces,
+                    'total_results' => count($sortedPlaces),
+                    'provider' => 'osm'
+                ]);
 
-                $results = $data['results'] ?? [];
-                $searchPlaces = array_merge($searchPlaces, $results);
-
-                // Get next page token if available
-                $nextPageToken = $data['next_page_token'] ?? null;
-                $pagesFetched++;
-
-            } while ($nextPageToken && $pagesFetched < $maxPages);
-
-            // Deduplicate and merge results
-            foreach ($searchPlaces as $place) {
-                $placeId = $place['place_id'] ?? null;
-                if ($placeId && !in_array($placeId, $seenPlaceIds)) {
-                    $seenPlaceIds[] = $placeId;
-                    $allPlaces[] = $place;
-                }
+            } catch (\Exception $e) {
+                $lastException = $e;
+                continue; // Try next server
             }
         }
 
-        \Log::info('Google Places API Results', [
-            'category' => $params['category'],
-            'total_unique_places' => count($allPlaces),
-            'searches_performed' => count($searchConfigs),
-            'location' => "{$userLat},{$userLng}",
-            'radius_km' => $radius / 1000
+        // if we get here, all servers failed
+        \Log::error('OSM/Overpass Error (All servers failed): ' . ($lastException ? $lastException->getMessage() : 'Unknown error'));
+        return response()->json([
+            'places' => [],
+            'total_results' => 0,
+            'error' => 'Failed to fetch venues from OpenStreetMap servers.'
         ]);
+    }
 
-        // Calculate distance for each place
-        $placesWithDistance = collect($allPlaces)->map(function ($place) use ($userLat, $userLng, $params) {
-            $placeLat = $place['geometry']['location']['lat'] ?? 0;
-            $placeLng = $place['geometry']['location']['lng'] ?? 0;
+    private function fetchFromGooglePlaces($params)
+    {
+        $configs = $this->getSearchConfigs($params['category']);
+        $allPlaces = [];
+        $photoReferences = [];
 
-            $distance = $this->calculateDistance($userLat, $userLng, $placeLat, $placeLng);
-
-            return [
-                'id' => $place['place_id'] ?? null,
-                'name' => $place['name'] ?? 'Unknown',
-                'address' => $place['vicinity'] ?? ($place['formatted_address'] ?? ''),
-                'latitude' => $placeLat,
-                'longitude' => $placeLng,
-                'rating' => $place['rating'] ?? null,
-                'user_ratings_total' => $place['user_ratings_total'] ?? 0,
-                'price_level' => $place['price_level'] ?? null,
-                'phone' => null,
-                'maps_url' => "https://www.google.com/maps/place/?q=place_id:" . ($place['place_id'] ?? ''),
-                'photo_reference' => isset($place['photos'][0]['photo_reference']) ? $place['photos'][0]['photo_reference'] : null,
-                'distance_km' => round($distance, 2),
-                'is_open_now' => $place['opening_hours']['open_now'] ?? null,
-                'category' => $params['category'],
+        foreach ($configs as $config) {
+            $url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
+            $query = [
+                'location' => "{$params['lat']},{$params['lng']}",
+                'radius' => $params['radius'] ?? 50000,
+                'key' => $this->apiKey,
             ];
-        });
 
-        // Apply category-based prioritization then sort by distance
-        $priorityCategories = ['club', 'lodging', 'hotel'];
+            if (isset($config['type'])) $query['type'] = $config['type'];
+            if (isset($config['keyword'])) $query['keyword'] = $config['keyword'];
 
-        if (in_array($params['category'], $priorityCategories)) {
-            // For priority categories, sort by distance directly
-            $placesWithDistance = $placesWithDistance->sortBy('distance_km');
-        } else {
-            // For other categories, also sort by distance
-            $placesWithDistance = $placesWithDistance->sortBy('distance_km');
+            try {
+                $response = Http::get($url, $query);
+                
+                if ($response->successful()) {
+                    $results = $response->json()['results'] ?? [];
+                    
+                    foreach ($results as $place) {
+                        if (!isset($allPlaces[$place['place_id']])) {
+                            $distance = $this->calculateDistance(
+                                $params['lat'], 
+                                $params['lng'], 
+                                $place['geometry']['location']['lat'], 
+                                $place['geometry']['location']['lng']
+                            );
+
+                            $allPlaces[$place['place_id']] = [
+                                'id' => $place['place_id'],
+                                'name' => $place['name'],
+                                'address' => $place['vicinity'] ?? '',
+                                'latitude' => $place['geometry']['location']['lat'],
+                                'longitude' => $place['geometry']['location']['lng'],
+                                'rating' => $place['rating'] ?? null,
+                                'user_ratings_total' => $place['user_ratings_total'] ?? 0,
+                                'price_level' => $place['price_level'] ?? null,
+                                'photo_reference' => $place['photos'][0]['photo_reference'] ?? null,
+                                'distance_km' => round($distance, 2),
+                                'is_open_now' => $place['opening_hours']['open_now'] ?? null,
+                                'category' => $params['category'],
+                                'maps_url' => "https://www.google.com/maps/search/?api=1&query=".urlencode($place['name'])."&query_place_id=".$place['place_id']
+                            ];
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error('Google Places Error: ' . $e->getMessage());
+            }
         }
 
-        $placesWithDistance = $placesWithDistance->values()->toArray();
+        $sortedPlaces = collect($allPlaces)->sortBy('distance_km')->values()->toArray();
 
         return response()->json([
-            'places' => $placesWithDistance,
-            'total_results' => count($placesWithDistance)
+            'places' => $sortedPlaces,
+            'total_results' => count($sortedPlaces),
+            'provider' => 'google'
         ]);
+    }
+
+    private function getOSMTagConfigs($category)
+    {
+        return match($category) {
+            'club' => [
+                ['name' => 'amenity', 'value' => 'nightclub']
+            ],
+            'restaurant' => [
+                ['name' => 'amenity', 'value' => 'restaurant'],
+                ['name' => 'amenity', 'value' => 'cafe']
+            ],
+            'lounge' => [
+                ['name' => 'amenity', 'value' => 'bar'],
+                ['name' => 'amenity', 'value' => 'pub']
+            ],
+            'arcade' => [
+                ['name' => 'leisure', 'value' => 'amusement_arcade']
+            ],
+            'hotel' => [
+                ['name' => 'tourism', 'value' => 'hotel']
+            ],
+            'lodging' => [
+                ['name' => 'tourism', 'value' => 'guest_house'],
+                ['name' => 'tourism', 'value' => 'hostel'],
+                ['name' => 'tourism', 'value' => 'apartment']
+            ],
+            default => [
+                ['name' => 'amenity', 'value' => 'restaurant']
+            ]
+        };
     }
 
     /**
@@ -363,5 +409,18 @@ class NearbyVenuesController extends Controller
             || str_contains($message, 'billing must be enabled')
             || str_contains($message, 'activate billing')
             || str_contains($message, 'enable billing');
+    }
+
+    private function getCategoryPlaceholderImage($category): string
+    {
+        return match($category) {
+            'club' => 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=800&q=80',
+            'restaurant' => 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80',
+            'lounge' => 'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=800&q=80',
+            'arcade' => 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&q=80',
+            'hotel' => 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80',
+            'lodging' => 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80',
+            default => 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&q=80',
+        };
     }
 }

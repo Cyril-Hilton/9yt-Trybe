@@ -51,8 +51,19 @@
         .logo-hover:hover {
             transform: translateY(-2px) scale(1.02);
         }
+
+        /* intl-tel-input overrides for dark mode */
+        .dark .iti__country-list {
+            background-color: #1f2937 !important;
+            color: white !important;
+        }
+        .dark .iti__country:hover {
+            background-color: #374151 !important;
+        }
     </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/css/intlTelInput.css">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/js/intlTelInput.min.js"></script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
     <!-- Glassmorphism Logo Loader -->

@@ -16,6 +16,7 @@ class Admin extends Authenticatable
         'phone',
         'password',
         'role',
+        'is_super_admin',
         'is_active',
         'last_login_at',
         'oauth_provider',
@@ -34,6 +35,7 @@ class Admin extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'is_super_admin' => 'boolean',
             'is_active' => 'boolean',
             'last_login_at' => 'datetime',
             'otp_expires_at' => 'datetime',

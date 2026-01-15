@@ -124,4 +124,9 @@ return [
         'cache_minutes' => env('NEWS_CACHE_MINUTES', 60),
     ],
 
+    'maps' => [
+        'enabled' => env('MAPS_ENABLED', true),
+        'provider' => env('MAPS_PROVIDER', 'osm'), // 'google' or 'osm'
+    ],
+
 ];

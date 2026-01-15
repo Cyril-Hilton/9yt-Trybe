@@ -25,6 +25,7 @@ class CompanyAuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:companies'],
             'phone' => ['nullable', 'string', 'max:20'],
+            'full_phone' => ['nullable', 'string', 'max:20'],
             'password' => ['required', 'confirmed', PasswordRule::defaults()],
             'website' => ['nullable', 'url', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -33,7 +34,7 @@ class CompanyAuthController extends Controller
         $company = Company::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'phone' => $validated['phone'] ?? null,
+            'phone' => $request->input('full_phone') ?? ($validated['phone'] ?? null),
             'password' => Hash::make($validated['password']),
             'website' => $validated['website'] ?? null,
             'description' => $validated['description'] ?? null,

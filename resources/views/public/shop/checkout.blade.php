@@ -57,12 +57,29 @@
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Shipping Address</h2>
                     
                     <div class="space-y-4">
-                        <div>
+                        <div x-data="checkoutAddressAutocomplete()" x-init="init()">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Street Address *</label>
-                            <input type="text" id="shipping_address" name="shipping_address" value="{{ old('shipping_address') }}" required
-                                   placeholder="Start typing your address..."
-                                   class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition">
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Start typing to see location suggestions</p>
+                            <div class="relative">
+                                <input type="text" id="shipping_address" name="shipping_address" value="{{ old('shipping_address') }}" required
+                                       placeholder="Start typing your address..."
+                                       x-model="query"
+                                       @input.debounce.300ms="searchAddresses()"
+                                       autocomplete="off"
+                                       class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition">
+                                
+                                <!-- OSM Suggestions -->
+                                <template x-if="provider === 'osm' && suggestions.length > 0">
+                                    <div class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                                        <template x-for="item in suggestions" :key="item.place_id">
+                                            <button type="button" @click="selectAddress(item)" 
+                                                    class="w-full text-left px-4 py-2 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                                                <div class="font-medium text-sm text-gray-900 dark:text-white" x-text="item.display_name"></div>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="provider === 'google' ? 'Start typing to see location suggestions' : 'Suggestions from OpenStreetMap'"></p>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -173,73 +190,112 @@
 @endsection
 
 @section('scripts')
-<!-- Google Maps Places API -->
-<script src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}&libraries=places" async defer></script>
 <script>
+const provider = "{{ config('services.maps.provider', 'osm') }}";
+
+function checkoutAddressAutocomplete() {
+    return {
+        provider: provider,
+        query: "{{ old('shipping_address') }}",
+        suggestions: [],
+        init() {
+            if (this.provider === 'google') {
+                // Google initialization is handled in initAutocomplete
+            }
+        },
+        async searchAddresses() {
+            if (this.provider !== 'osm' || this.query.length < 3) {
+                this.suggestions = [];
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(this.query)}&format=json&limit=5&addressdetails=1&countrycodes=gh&accept-language=en`);
+                this.suggestions = await response.json();
+            } catch (error) {
+                console.error('OSM Search error:', error);
+            }
+        },
+        selectAddress(item) {
+            this.query = item.display_name;
+            this.suggestions = [];
+            
+            // Extract components for OSM
+            const addr = item.address;
+            const street = addr.road || addr.pedestrian || addr.suburb || '';
+            const house = addr.house_number || '';
+            const city = addr.city || addr.town || addr.village || addr.suburb || '';
+            const region = addr.state || addr.region || '';
+
+            if (street) {
+                this.query = (house ? house + ' ' : '') + street;
+                document.getElementById('shipping_address').value = this.query;
+            }
+            if (city) document.getElementById('city').value = city;
+            if (region) document.getElementById('region').value = region;
+        }
+    }
+}
+
 let autocomplete;
 
 function initAutocomplete() {
+    if (provider !== 'google') return;
+    
     const addressInput = document.getElementById('shipping_address');
     const cityInput = document.getElementById('city');
     const regionInput = document.getElementById('region');
 
     if (!addressInput) return;
 
-    // Create autocomplete instance biased to Ghana
     autocomplete = new google.maps.places.Autocomplete(addressInput, {
         types: ['address'],
         componentRestrictions: { country: 'gh' },
         fields: ['address_components', 'formatted_address', 'name']
     });
 
-    // Handle place selection
     autocomplete.addListener('place_changed', function() {
         const place = autocomplete.getPlace();
-
         if (!place.address_components) return;
 
-        // Extract address components
         let street = '';
         let city = '';
         let region = '';
 
         place.address_components.forEach(component => {
             const types = component.types;
-
-            if (types.includes('street_number')) {
-                street = component.long_name + ' ';
-            }
-            if (types.includes('route')) {
-                street += component.long_name;
-            }
-            if (types.includes('locality') || types.includes('postal_town')) {
-                city = component.long_name;
-            }
-            if (types.includes('administrative_area_level_1')) {
-                region = component.long_name;
-            }
+            if (types.includes('street_number')) street = component.long_name + ' ';
+            if (types.includes('route')) street += component.long_name;
+            if (types.includes('locality') || types.includes('postal_town')) city = component.long_name;
+            if (types.includes('administrative_area_level_1')) region = component.long_name;
             if (types.includes('sublocality') || types.includes('sublocality_level_1')) {
                 if (!city) city = component.long_name;
             }
         });
 
-        // Populate fields
         if (street) addressInput.value = street;
         if (city) cityInput.value = city;
         if (region) regionInput.value = region;
+        
+        // Update Alpine query if it exists
+        const alpineData = Array.from(document.querySelectorAll('[x-data]')).find(el => el.__x && el.__x.$data.checkoutAddressAutocomplete);
+        if (alpineData) alpineData.__x.$data.query = street || place.formatted_address;
     });
 }
 
-// Initialize when Google Maps loads
-window.initAutocomplete = initAutocomplete;
-
-// Also try to initialize on load
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-        if (typeof google !== 'undefined' && google.maps && google.maps.places) {
-            initAutocomplete();
+// Load appropriate API
+(function() {
+    if (provider === 'google') {
+        const apiKey = '{{ config('services.google.maps_api_key') }}';
+        if (apiKey) {
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initAutocomplete`;
+            script.async = true; script.defer = true;
+            document.head.appendChild(script);
         }
-    }, 1000);
-});
+    } else {
+        // No heavy JS API to load for OSM, Alpine handles it
+    }
+})();
 </script>
 @endsection

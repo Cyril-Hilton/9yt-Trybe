@@ -38,6 +38,14 @@ class EventFactory extends Factory
             'tickets_sold' => 0,
             'total_revenue' => 0,
             'approved_at' => now(),
+            'banner_image' => match($type = fake()->randomElement(['conference', 'concert', 'workshop', 'party'])) {
+                'concert' => 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&q=80',
+                'conference' => 'https://images.unsplash.com/photo-1540575861501-7ad060e29ad3?w=1200&q=80',
+                'workshop' => 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200&q=80',
+                'party' => 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1200&q=80',
+                default => 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=1200&q=80'
+            },
+            'event_type' => $type,
         ];
     }
 
