@@ -162,7 +162,7 @@ class Event extends Model
 
     public function scopeUpcoming($query)
     {
-        return $query->where('start_date', '>', now());
+        return $query->where('end_date', '>', now());
     }
 
     public function scopePast($query)
