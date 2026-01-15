@@ -1968,6 +1968,7 @@
         }
         
         function slider() {
+            return {
                 currentSlide: 0,
                 totalSlides: 2,
                 autoplayInterval: null,
