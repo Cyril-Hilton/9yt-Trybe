@@ -1543,9 +1543,27 @@
                 <h2 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
                     Explore Near <span class="gradient-text">You</span>
                 </h2>
-                <p class="text-gray-600 dark:text-gray-300 text-lg md:text-xl mb-2">
                     Discover amazing venues around <span x-text="userCity" class="font-semibold text-cyan-600 dark:text-cyan-400"></span>
                 </p>
+
+                <!-- DEBUG OVERLAY (Temporary) -->
+                <div class="mt-4 p-4 bg-black/80 text-green-400 font-mono text-xs text-left rounded-lg max-w-2xl mx-auto overflow-hidden shadow-2xl border border-green-500/30">
+                    <h3 class="font-bold text-white border-b border-gray-700 pb-1 mb-2">🔍 FRONTEND DEBUGGER</h3>
+                    <div class="grid grid-cols-2 gap-x-8 gap-y-1">
+                        <div>Status: <span x-text="loading ? '⏳ LOADING...' : '✅ IDLE'"></span></div>
+                        <div>Error: <span x-text="errorMessage || 'None'" :class="errorMessage ? 'text-red-400 font-bold' : 'text-gray-500'"></span></div>
+                        <div>GPS Perm: <span x-text="locationPermissionGranted ? 'GRANTED' : 'PENDING/DENIED'"></span></div>
+                        <div>City: <span x-text="userCity"></span></div>
+                        <div>Coords: <span x-text="userLat.toFixed(4) + ', ' + userLng.toFixed(4)"></span></div>
+                        <div>Venues API: <span x-text="originalVenues.length + ' raw items'"></span></div>
+                        <div>Visible: <span x-text="venues.length + ' items'"></span></div>
+                        <div>Category: <span x-text="selectedCategory"></span></div>
+                    </div>
+                    <div class="mt-2 text-gray-400 italic">
+                        If venues is 0 but API has items, filters are hiding them. <br>
+                        If API is 0, backend fetch failed or timed out.
+                    </div>
+                </div>
 
                 <!-- Location Tracking Status -->
                 <div class="mt-3 flex flex-col items-center gap-3">
