@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
         Schema::defaultStringLength(191);
         Gate::policy(Conference::class, ConferencePolicy::class);
 
-        if ($this->app->environment('production')) {
+        if ($this->app->environment('production') || str_contains(request()->getHost(), '9yttrybe.com')) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
     }

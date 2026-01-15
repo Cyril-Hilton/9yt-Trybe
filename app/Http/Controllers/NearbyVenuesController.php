@@ -51,7 +51,7 @@ class NearbyVenuesController extends Controller
         ]);
 
         $cacheKey = sprintf(
-            'nearby:%s:%s:%s:%s',
+            'nearby:v2:%s:%s:%s:%s',
             round($validated['lat'], 2),
             round($validated['lng'], 2),
             $validated['category'],
