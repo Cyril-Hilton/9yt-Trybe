@@ -23,7 +23,7 @@
         }
     </script>
 
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="{{ asset('css/glassmorphism.css') }}?v={{ time() }}">
     <style>
         [x-cloak] { display: none !important; }
@@ -695,8 +695,8 @@
     </style>
 
     <!-- Shepherd.js for Product Tours -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@@11.2.0/dist/css/shepherd.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/shepherd.js@@11.2.0/dist/js/shepherd.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/css/shepherd.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/js/shepherd.min.js"></script>
 </head>
 <body class="bg-white dark:bg-black min-h-screen transition-colors duration-300" x-data="{ mobileMenuOpen: false }">
     <!-- Page Loader with Glassmorphism Logo -->
