@@ -1235,7 +1235,8 @@
                 <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
             </div>
 
-            <!-- Slide 2 - Video -->
+            <!-- Slide 2 - Video (Temporarily disabled due to size) -->
+            <!--
             <div x-show="currentSlide === 1"
                  x-transition:enter="transition ease-in-out duration-500"
                  x-transition:enter-start="opacity-0"
@@ -1250,6 +1251,7 @@
                 </video>
                 <div class="absolute inset-0 bg-gradient-to-t from-pink-900/60 via-transparent to-transparent"></div>
             </div>
+            -->
 
             <!-- Navigation Arrows with Glow -->
             <button x-on:click="prevSlide()" class="absolute left-4 top-1/2 transform -translate-y-1/2 glass-effect text-white p-3 rounded-full transition hover-lift neon-border z-10">
@@ -1987,7 +1989,8 @@
         function slider() {
             return {
                 currentSlide: 0,
-                totalSlides: 2,
+                currentSlide: 0,
+                totalSlides: 1, // Temporarily reduced to 1
                 autoplayInterval: null,
 
                 init() {
@@ -2056,7 +2059,10 @@
                 loading: false,
                 errorMessage: '',
                 currentPage: 1,
+                currentPage: 1,
                 perPage: 15,
+                filteredVenuesCount: 0,
+                allFilteredVenues: [],
 
                 // Advanced Filters
                 sortBy: 'distance',
