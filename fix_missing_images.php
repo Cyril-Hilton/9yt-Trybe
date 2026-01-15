@@ -74,7 +74,7 @@ foreach ($events as $event) {
 
 echo "\nTotal events updated: $updatedCount\n";
 
-// 3. Fix EventImages & GalleryImages Table
+// 3. Fix Secondary Image Tables
 $imageTables = ['event_images', 'gallery_images'];
 foreach ($imageTables as $tableName) {
     if (!Schema::hasTable($tableName)) {
@@ -86,7 +86,7 @@ foreach ($imageTables as $tableName) {
     $imgUpdatedCount = 0;
 
     foreach ($images as $img) {
-        $path = $tableName === 'event_images' ? $img->image_path : $img->path;
+        $path = $img->image_path; // Corrected: Both tables use 'image_path'
         if (!$path) continue;
 
         $isUrl = str_starts_with($path, 'http');
@@ -101,10 +101,11 @@ foreach ($imageTables as $tableName) {
             }
             
             $newImage = getRandomImage($type, $unsplashPool);
-            $updateData = ($tableName === 'event_images') ? ['image_path' => $newImage] : ['path' => $newImage];
-            $updateData['updated_at'] = now();
             
-            DB::table($tableName)->where('id', $img->id)->update($updateData);
+            DB::table($tableName)->where('id', $img->id)->update([
+                'image_path' => $newImage,
+                'updated_at' => now()
+            ]);
             
             echo "[Table: {$tableName}, ID: {$img->id}] Updated missing '{$path}' to URL.\n";
             $imgUpdatedCount++;
