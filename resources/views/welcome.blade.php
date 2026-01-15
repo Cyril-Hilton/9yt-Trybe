@@ -1543,6 +1543,7 @@
                 <h2 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
                     Explore Near <span class="gradient-text">You</span>
                 </h2>
+                <p class="text-gray-600 dark:text-gray-300 text-lg md:text-xl mb-2">
                     Discover amazing venues around <span x-text="userCity" class="font-semibold text-cyan-600 dark:text-cyan-400"></span>
                 </p>
 
