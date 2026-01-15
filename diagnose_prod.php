@@ -7,10 +7,45 @@
 
 define('LARAVEL_START', microtime(true));
 
+// --- Phase 0: Path Detection ---
+echo "--- Phase 0: Path Detection ---\n";
+$possible_paths = [
+    __DIR__ . '/vendor/autoload.php',
+    dirname(__DIR__) . '/vendor/autoload.php',
+    __DIR__ . '/../vendor/autoload.php',
+];
+
+$autoload_path = null;
+foreach ($possible_paths as $path) {
+    if (file_exists($path)) {
+        $autoload_path = $path;
+        break;
+    }
+}
+
+if (!$autoload_path) {
+    echo "ERROR: Could not find vendor/autoload.php in any of these locations:\n";
+    foreach ($possible_paths as $path) echo " - $path\n";
+    echo "\nCurrent Directory: " . __DIR__ . "\n";
+    echo "Files in current directory:\n";
+    print_r(scandir(__DIR__));
+    exit(1);
+}
+
+echo "Found autoload at: $autoload_path\n";
+require $autoload_path;
+
+$base_dir = dirname($autoload_path);
+$app_path = $base_dir . '/bootstrap/app.php';
+
+if (!file_exists($app_path)) {
+    echo "ERROR: Found vendor but could not find bootstrap/app.php at $app_path\n";
+    exit(1);
+}
+
 try {
     echo "--- Phase 1: Bootstrapping ---\n";
-    require __DIR__ . '/vendor/autoload.php';
-    $app = require_once __DIR__ . '/bootstrap/app.php';
+    $app = require_once $app_path;
     $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
     $kernel->bootstrap();
     echo "SUCCESS: Laravel bootstrapped successfully.\n\n";
