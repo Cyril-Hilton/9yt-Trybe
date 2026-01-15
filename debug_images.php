@@ -23,10 +23,28 @@ if (file_exists($absTarget)) {
     echo shell_exec($cmd);
 }
 
+echo "\n--- Folder Repair ---\n";
+$folders = [
+    'storage/app/public/events/banners',
+    'storage/app/public/categories/icons',
+    'storage/framework/views',
+    'storage/framework/cache',
+    'storage/framework/sessions',
+];
+
+foreach ($folders as $folder) {
+    if (!file_exists($currentDir . '/' . $folder)) {
+        echo "Creating missing folder: $folder\n";
+        mkdir($currentDir . '/' . $folder, 0755, true);
+    } else {
+        echo "Folder exists: $folder\n";
+    }
+}
+
 echo "\n--- Symlink Investigation ---\n";
 $linksToCheck = [
     $currentDir . '/public/storage',
-    $currentDir . '/storage_link_test' // temporary
+    $currentDir . '/storage' // cPanel often needs this in the root if serving from there
 ];
 
 foreach ($linksToCheck as $link) {
