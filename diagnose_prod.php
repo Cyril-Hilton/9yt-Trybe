@@ -1,0 +1,63 @@
+<?php
+/**
+ * 9yt !Trybe Production Diagnostic Script
+ * Purpose: Pinpoint why the homepage might be returning a 500 error.
+ * Run via: php diagnose_prod.php
+ */
+
+define('LARAVEL_START', microtime(true));
+
+try {
+    echo "--- Phase 1: Bootstrapping ---\n";
+    require __DIR__ . '/vendor/autoload.php';
+    $app = require_once __DIR__ . '/bootstrap/app.php';
+    $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+    $kernel->bootstrap();
+    echo "SUCCESS: Laravel bootstrapped successfully.\n\n";
+
+    echo "--- Phase 2: Configuration Check ---\n";
+    echo "App Env: " . config('app.env') . "\n";
+    echo "App Debug: " . (config('app.debug') ? 'TRUE' : 'FALSE') . "\n";
+    echo "PHP Version: " . PHP_VERSION . "\n";
+    echo "SUCCESS: Configuration loaded.\n\n";
+
+    echo "--- Phase 3: Blade Compilation Check ---\n";
+    $welcomePath = base_path('resources/views/welcome.blade.php');
+    if (!file_exists($welcomePath)) {
+        throw new Exception("welcome.blade.php NOT FOUND at $welcomePath");
+    }
+    echo "Compiling welcome.blade.php...\n";
+    $compiled = Illuminate\Support\Facades\Blade::compileString(file_get_contents($welcomePath));
+    echo "SUCCESS: Blade compilation successful.\n\n";
+
+    echo "--- Phase 4: Controller Execution ---\n";
+    $request = Illuminate\Http\Request::create('/', 'GET');
+    $controller = $app->make(App\Http\Controllers\Public\EventController::class);
+    $newsService = $app->make(App\Services\News\NewsService::class);
+    
+    echo "Running EventController@home...\n";
+    $response = $controller->home($request, $newsService);
+    
+    if ($response instanceof \Illuminate\View\View) {
+        echo "SUCCESS: Controller returned a View. Attempting to render...\n";
+        $html = $response->render();
+        echo "SUCCESS: View rendered successfully (Length: " . strlen($html) . " chars).\n";
+    } elseif ($response instanceof \Illuminate\Http\Response) {
+        echo "SUCCESS: Controller returned a Response. Status: " . $response->getStatusCode() . "\n";
+        $html = $response->getContent();
+        echo "SUCCESS: Content Length: " . strlen($html) . " chars.\n";
+    } else {
+        echo "Controller returned: " . get_class($response) . "\n";
+    }
+
+    echo "--- DIAGNOSTIC COMPLETE: NO ERRORS DETECTED ---\n";
+    echo "If you still see a 500 error in the browser, it might be a server-level issue (e.g., .htaccess or nginx config).\n";
+
+} catch (\Throwable $e) {
+    echo "\n!!! ERROR DETECTED !!!\n";
+    echo "Message: " . $e->getMessage() . "\n";
+    echo "File: " . $e->getFile() . "\n";
+    echo "Line: " . $e->getLine() . "\n";
+    echo "\nStack Trace:\n";
+    echo $e->getTraceAsString() . "\n";
+}
