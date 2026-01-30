@@ -10,6 +10,7 @@ use App\Models\ShopProduct;
 use App\Models\Admin;
 use App\Services\Sms\SmsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -228,6 +229,11 @@ class ShopCheckoutController extends Controller
                     'status' => 'processing',
                 ]);
 
+                if ($order->user_id && (!Auth::check() || Auth::id() !== $order->user_id)) {
+                    Auth::loginUsingId($order->user_id);
+                    $request->session()->regenerate();
+                }
+
                 // Send confirmation email AND SMS
                 try {
                     $result = $this->notificationService->sendShopOrderNotifications($order);
@@ -323,7 +329,8 @@ class ShopCheckoutController extends Controller
         } else {
             // Guest order - must match session ID
             if ($order->session_id !== $sessionId) {
-                abort(403, 'Unauthorized access to this order.');
+                return redirect()->route('shop.cart')
+                    ->with('error', 'Please return to your cart to access this order confirmation.');
             }
         }
 

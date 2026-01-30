@@ -26,11 +26,15 @@ class EventController extends Controller
 
     public function create()
     {
+        $this->authorize('create', Event::class);
+
         return view('company.events.create');
     }
 
     public function store(Request $request)
     {
+        $this->authorize('create', Event::class);
+
         $company = Auth::guard('company')->user();
 
         $validated = $request->validate([

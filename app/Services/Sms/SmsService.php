@@ -473,18 +473,6 @@ class SmsService
                 ]);
             }
 
-            // Schedule with provider
-            $providerResult = $this->provider->sendScheduledSms(
-                $recipients,
-                $message,
-                $scheduledAtFormatted,
-                $senderIdToUse
-            );
-
-            if (!$providerResult['success']) {
-                throw new \RuntimeException($providerResult['error'] ?? 'Failed to schedule SMS with provider.');
-            }
-
             // Reserve credits
             $creditBalance->deductCredits($totalCreditsNeeded);
 
@@ -511,6 +499,65 @@ class SmsService
                 'error' => 'An error occurred while scheduling SMS: ' . $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Send a scheduled campaign that is due (credits already reserved).
+     */
+    public function sendScheduledCampaign(SmsCampaign $campaign): array
+    {
+        $recipients = $campaign->messages()
+            ->whereIn('status', ['scheduled', 'pending'])
+            ->pluck('recipient')
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
+
+        if (empty($recipients)) {
+            $campaign->update([
+                'status' => 'failed',
+                'completed_at' => now(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'No recipients available for scheduled campaign.',
+            ];
+        }
+
+        $campaign->update([
+            'status' => 'processing',
+            'sent_at' => now(),
+        ]);
+
+        // Use the stored sender ID; fallback to default if missing.
+        $senderIdToUse = $campaign->sender_id ?: $this->getSenderId($campaign->owner, null);
+
+        $result = $this->provider->sendBulkSms($recipients, $campaign->message, $senderIdToUse);
+        $messageStatus = $result['success'] ? 'submitted' : 'failed';
+
+        $campaign->messages()
+            ->whereIn('status', ['scheduled', 'pending'])
+            ->update([
+                'status' => $messageStatus,
+                'sent_at' => $result['success'] ? now() : null,
+            ]);
+
+        $sentCount = $result['success'] ? count($recipients) : 0;
+
+        $campaign->update([
+            'status' => $result['success'] ? 'completed' : 'failed',
+            'total_sent' => $sentCount,
+            'total_delivered' => $sentCount,
+            'completed_at' => now(),
+        ]);
+
+        return [
+            'success' => (bool) $result['success'],
+            'sent_count' => $sentCount,
+            'error' => $result['results']['error'] ?? ($result['error'] ?? null),
+        ];
     }
 
     /**

@@ -61,6 +61,7 @@ class AdminSurveyController extends Controller
     {
         $templates = [
             [
+                'key' => 'customer_satisfaction',
                 'name' => 'Customer Satisfaction',
                 'description' => 'Measure customer satisfaction with your product or service',
                 'questions' => [
@@ -71,6 +72,7 @@ class AdminSurveyController extends Controller
                 ]
             ],
             [
+                'key' => 'event_feedback',
                 'name' => 'Event Feedback',
                 'description' => 'Gather feedback from event attendees',
                 'questions' => [
@@ -81,6 +83,7 @@ class AdminSurveyController extends Controller
                 ]
             ],
             [
+                'key' => 'product_feedback',
                 'name' => 'Product Feedback',
                 'description' => 'Collect product feedback from users',
                 'questions' => [
@@ -91,6 +94,7 @@ class AdminSurveyController extends Controller
                 ]
             ],
             [
+                'key' => 'employee_engagement',
                 'name' => 'Employee Engagement',
                 'description' => 'Measure employee satisfaction and engagement',
                 'questions' => [

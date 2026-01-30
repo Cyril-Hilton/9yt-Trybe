@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Staff;
 use App\Http\Controllers\Controller;
 use App\Models\OrganizationStaff;
 use App\Services\MnotifyService;
+use App\Support\PhoneNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -34,7 +35,12 @@ class StaffAuthController extends Controller
             'phone' => 'required|string',
         ]);
 
-        $staff = OrganizationStaff::where('phone', $validated['phone'])->first();
+        $rawPhone = $validated['phone'];
+        $normalizedPhone = PhoneNumber::normalize($rawPhone) ?? $rawPhone;
+
+        $staff = OrganizationStaff::where('phone', $normalizedPhone)
+            ->orWhere('phone', $rawPhone)
+            ->first();
 
         if (!$staff) {
             return back()->withErrors(['phone' => 'Phone number not found.']);
@@ -49,15 +55,15 @@ class StaffAuthController extends Controller
 
         // Send OTP via mNotify SMS
         $message = "Your 9yt !Trybe Scanner verification code is: {$otp}. Valid for 10 minutes. Do not share this code.";
-        $smsResult = $this->mnotify->sendSMS($staff->phone, $message);
+        $smsResult = $this->mnotify->sendSMS($normalizedPhone, $message);
 
         if ($smsResult['success']) {
             \Log::info("OTP sent via SMS to {$staff->phone}: {$otp}");
 
             return back()->with([
                 'otp_sent' => true,
-                'phone' => $validated['phone'],
-                'message' => "Verification code sent to {$validated['phone']}"
+                'phone' => $rawPhone,
+                'message' => "Verification code sent to {$rawPhone}"
             ]);
         }
 
@@ -66,7 +72,7 @@ class StaffAuthController extends Controller
 
         return back()->with([
             'otp_sent' => true,
-            'phone' => $validated['phone'],
+            'phone' => $rawPhone,
             'message' => "OTP sent. For testing (SMS failed), check logs: {$otp}"
         ]);
     }
@@ -81,7 +87,12 @@ class StaffAuthController extends Controller
             'otp' => 'required|string|size:6',
         ]);
 
-        $staff = OrganizationStaff::where('phone', $validated['phone'])->first();
+        $rawPhone = $validated['phone'];
+        $normalizedPhone = PhoneNumber::normalize($rawPhone) ?? $rawPhone;
+
+        $staff = OrganizationStaff::where('phone', $normalizedPhone)
+            ->orWhere('phone', $rawPhone)
+            ->first();
 
         if (!$staff) {
             return back()->withErrors(['otp' => 'Invalid verification code.']);

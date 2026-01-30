@@ -14,7 +14,7 @@ class EventPolicy
 
     public function view(Company $company, Event $event): bool
     {
-        return $event->company_id === $company->id;
+        return (int) $event->company_id === (int) $company->id;
     }
 
     public function create(Company $company): bool
@@ -24,17 +24,17 @@ class EventPolicy
 
     public function update(Company $company, Event $event): bool
     {
-        return $event->company_id === $company->id && !$company->is_suspended;
+        return (int) $event->company_id === (int) $company->id && !$company->is_suspended;
     }
 
     public function delete(Company $company, Event $event): bool
     {
-        return $event->company_id === $company->id;
+        return (int) $event->company_id === (int) $company->id;
     }
 
     public function publish(Company $company, Event $event): bool
     {
-        return $event->company_id === $company->id
+        return (int) $event->company_id === (int) $company->id
             && !$company->is_suspended
             && $event->isDraft();
     }

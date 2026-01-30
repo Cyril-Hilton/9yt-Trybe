@@ -436,6 +436,8 @@
                                        max="100000"
                                        placeholder="e.g., 200"
                                        class="w-full px-4 py-3 border-2 border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg font-semibold"
+                                       x-bind:required="recipientType === 'use_our_contacts'"
+                                       x-bind:disabled="recipientType !== 'use_our_contacts'"
                                        x-model.number="targetContactCount"
                                        @input="recipientCount = targetContactCount">
                                 <p class="mt-2 text-sm text-gray-600">
@@ -572,6 +574,8 @@
                         </label>
                         <input type="datetime-local"
                                name="scheduled_at"
+                               x-bind:required="scheduleType === 'later'"
+                               x-bind:disabled="scheduleType !== 'later'"
                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     </div>
                 </div>

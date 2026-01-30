@@ -5,6 +5,7 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\MnotifyService;
+use App\Support\PhoneNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,7 +27,12 @@ class UserOTPController extends Controller
             'phone' => 'required|string',
         ]);
 
-        $user = User::where('phone', $validated['phone'])->first();
+        $rawPhone = $validated['phone'];
+        $normalizedPhone = PhoneNumber::normalize($rawPhone) ?? $rawPhone;
+
+        $user = User::where('phone', $normalizedPhone)
+            ->orWhere('phone', $rawPhone)
+            ->first();
 
         if (!$user) {
             return back()->withErrors(['phone' => 'Phone number not found.']);
@@ -37,15 +43,15 @@ class UserOTPController extends Controller
 
         // Send OTP via mNotify SMS
         $message = "Your 9yt !Trybe verification code is: {$otp}. Valid for 10 minutes. Do not share this code.";
-        $smsResult = $this->mnotify->sendSMS($user->phone, $message);
+        $smsResult = $this->mnotify->sendSMS($normalizedPhone, $message);
 
         if ($smsResult['success']) {
             \Log::info("OTP sent via SMS to {$user->phone}: {$otp}");
 
             return back()->with([
                 'otp_sent' => true,
-                'phone' => $validated['phone'],
-                'message' => "Verification code sent to {$validated['phone']}"
+                'phone' => $rawPhone,
+                'message' => "Verification code sent to {$rawPhone}"
             ]);
         }
 
@@ -54,7 +60,7 @@ class UserOTPController extends Controller
 
         return back()->with([
             'otp_sent' => true,
-            'phone' => $validated['phone'],
+            'phone' => $rawPhone,
             'message' => "OTP sent. For testing (SMS failed), check logs: {$otp}"
         ]);
     }
@@ -69,7 +75,12 @@ class UserOTPController extends Controller
             'otp' => 'required|string|size:6',
         ]);
 
-        $user = User::where('phone', $validated['phone'])->first();
+        $rawPhone = $validated['phone'];
+        $normalizedPhone = PhoneNumber::normalize($rawPhone) ?? $rawPhone;
+
+        $user = User::where('phone', $normalizedPhone)
+            ->orWhere('phone', $rawPhone)
+            ->first();
 
         if (!$user) {
             return back()->withErrors(['otp' => 'Invalid verification code.']);
@@ -77,6 +88,10 @@ class UserOTPController extends Controller
 
         if (!$user->verifyOTP($validated['otp'])) {
             return back()->withErrors(['otp' => 'Invalid or expired verification code.']);
+        }
+
+        if (!$user->email_verified_at) {
+            $user->forceFill(['email_verified_at' => now()])->save();
         }
 
         // Login user

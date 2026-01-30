@@ -136,10 +136,10 @@ Route::get('/polls/{slug}', [App\Http\Controllers\Public\PollController::class, 
 
 // Event Ticket Purchase & Checkout (REQUIRES LOGIN - No guest checkout allowed!)
 Route::get('/events/{slug}/checkout', [App\Http\Controllers\Public\EventCheckoutController::class, 'show'])
-    ->middleware('auth') // Must be logged in to checkout
+    ->middleware(['auth', 'verified']) // Must be logged in + verified to checkout
     ->name('events.checkout');
 Route::post('/events/{slug}/checkout', [App\Http\Controllers\Public\EventCheckoutController::class, 'processOrder'])
-    ->middleware(['auth', 'throttle:10,1']) // Must be logged in + rate limiting
+    ->middleware(['auth', 'verified', 'throttle:10,1']) // Must be logged in + verified + rate limiting
     ->name('events.checkout.process');
 Route::get('/events/orders/{orderNumber}', [App\Http\Controllers\Public\EventCheckoutController::class, 'confirmation'])
     ->name('events.order.confirmation');
@@ -165,10 +165,10 @@ Route::delete('/cart/{cartItem}', [App\Http\Controllers\Public\ShopController::c
 
 // Shop Checkout & Orders (REQUIRES LOGIN - No guest checkout allowed!)
 Route::get('/shop/checkout', [App\Http\Controllers\Public\ShopCheckoutController::class, 'show'])
-    ->middleware('auth') // Must be logged in to checkout
+    ->middleware(['auth', 'verified']) // Must be logged in + verified to checkout
     ->name('shop.checkout');
 Route::post('/shop/checkout', [App\Http\Controllers\Public\ShopCheckoutController::class, 'process'])
-    ->middleware(['auth', 'throttle:10,1']) // Must be logged in + rate limiting
+    ->middleware(['auth', 'verified', 'throttle:10,1']) // Must be logged in + verified + rate limiting
     ->name('shop.checkout.process');
 Route::get('/shop/payment/callback', [App\Http\Controllers\Public\ShopCheckoutController::class, 'paymentCallback'])
     ->middleware('throttle:60,1') // 60 callbacks per minute
@@ -230,77 +230,79 @@ Route::prefix('user')->name('user.')->group(function () {
         Route::post('/logout', [App\Http\Controllers\Auth\UserAuthController::class, 'logout'])
             ->name('logout');
 
-        Route::get('/dashboard', [App\Http\Controllers\User\UserDashboardController::class, 'index'])
-            ->name('dashboard');
-        Route::get('/tickets', [App\Http\Controllers\User\UserDashboardController::class, 'tickets'])
-            ->name('tickets');
-        Route::get('/tickets/{order}', [App\Http\Controllers\User\UserDashboardController::class, 'ticketDetails'])
-            ->name('tickets.show');
-
-        // User SMS Routes
-        Route::prefix('sms')->name('sms.')->group(function () {
-            // Dashboard
-            Route::get('/', [App\Http\Controllers\User\UserSmsDashboardController::class, 'index'])
+        Route::middleware('verified')->group(function () {
+            Route::get('/dashboard', [App\Http\Controllers\User\UserDashboardController::class, 'index'])
                 ->name('dashboard');
+            Route::get('/tickets', [App\Http\Controllers\User\UserDashboardController::class, 'tickets'])
+                ->name('tickets');
+            Route::get('/tickets/{order}', [App\Http\Controllers\User\UserDashboardController::class, 'ticketDetails'])
+                ->name('tickets.show');
 
-            // Campaigns (Excel & Instant Messaging)
-            Route::get('/campaigns', [App\Http\Controllers\User\UserSmsCampaignController::class, 'index'])
-                ->name('campaigns.index');
-            Route::get('/campaigns/create', [App\Http\Controllers\User\UserSmsCampaignController::class, 'create'])
-                ->name('campaigns.create');
-            Route::post('/campaigns/send', [App\Http\Controllers\User\UserSmsCampaignController::class, 'send'])
-                ->middleware('throttle:10,1') // 10 requests per minute
-                ->name('campaigns.send');
-            Route::get('/campaigns/{id}', [App\Http\Controllers\User\UserSmsCampaignController::class, 'show'])
-                ->name('campaigns.show');
-            Route::get('/campaigns/{id}/resend', [App\Http\Controllers\User\UserSmsCampaignController::class, 'resend'])
-                ->name('campaigns.resend');
-            Route::post('/campaigns/{id}/cancel', [App\Http\Controllers\User\UserSmsCampaignController::class, 'cancel'])
-                ->name('campaigns.cancel');
-            Route::delete('/campaigns/{id}', [App\Http\Controllers\User\UserSmsCampaignController::class, 'destroy'])
-                ->name('campaigns.destroy');
+            // User SMS Routes
+            Route::prefix('sms')->name('sms.')->group(function () {
+                // Dashboard
+                Route::get('/', [App\Http\Controllers\User\UserSmsDashboardController::class, 'index'])
+                    ->name('dashboard');
 
-            // Contacts
-            Route::get('/contacts', [App\Http\Controllers\User\UserSmsContactController::class, 'index'])
-                ->name('contacts.index');
-            Route::get('/contacts/create', [App\Http\Controllers\User\UserSmsContactController::class, 'create'])
-                ->name('contacts.create');
-            Route::post('/contacts', [App\Http\Controllers\User\UserSmsContactController::class, 'store'])
-                ->name('contacts.store');
-            Route::get('/contacts/bulk-upload', [App\Http\Controllers\User\UserSmsContactController::class, 'bulkCreate'])
-                ->name('contacts.bulk-upload');
-            Route::post('/contacts/bulk-upload', [App\Http\Controllers\User\UserSmsContactController::class, 'bulkStore'])
-                ->name('contacts.bulk-store');
-            Route::get('/contacts/download-sample', [App\Http\Controllers\User\UserSmsContactController::class, 'downloadSample'])
-                ->name('contacts.download-sample');
-            Route::delete('/contacts/{id}', [App\Http\Controllers\User\UserSmsContactController::class, 'destroy'])
-                ->name('contacts.destroy');
+                // Campaigns (Excel & Instant Messaging)
+                Route::get('/campaigns', [App\Http\Controllers\User\UserSmsCampaignController::class, 'index'])
+                    ->name('campaigns.index');
+                Route::get('/campaigns/create', [App\Http\Controllers\User\UserSmsCampaignController::class, 'create'])
+                    ->name('campaigns.create');
+                Route::post('/campaigns/send', [App\Http\Controllers\User\UserSmsCampaignController::class, 'send'])
+                    ->middleware('throttle:10,1') // 10 requests per minute
+                    ->name('campaigns.send');
+                Route::get('/campaigns/{id}', [App\Http\Controllers\User\UserSmsCampaignController::class, 'show'])
+                    ->name('campaigns.show');
+                Route::get('/campaigns/{id}/resend', [App\Http\Controllers\User\UserSmsCampaignController::class, 'resend'])
+                    ->name('campaigns.resend');
+                Route::post('/campaigns/{id}/cancel', [App\Http\Controllers\User\UserSmsCampaignController::class, 'cancel'])
+                    ->name('campaigns.cancel');
+                Route::delete('/campaigns/{id}', [App\Http\Controllers\User\UserSmsCampaignController::class, 'destroy'])
+                    ->name('campaigns.destroy');
 
-            // Sender IDs
-            Route::get('/sender-ids', [App\Http\Controllers\User\UserSmsSenderIdController::class, 'index'])
-                ->name('sender-ids.index');
-            Route::get('/sender-ids/create', [App\Http\Controllers\User\UserSmsSenderIdController::class, 'create'])
-                ->name('sender-ids.create');
-            Route::post('/sender-ids', [App\Http\Controllers\User\UserSmsSenderIdController::class, 'store'])
-                ->name('sender-ids.store');
-            Route::get('/sender-ids/{id}/edit', [App\Http\Controllers\User\UserSmsSenderIdController::class, 'edit'])
-                ->name('sender-ids.edit');
-            Route::put('/sender-ids/{id}', [App\Http\Controllers\User\UserSmsSenderIdController::class, 'update'])
-                ->name('sender-ids.update');
-            Route::post('/sender-ids/{id}/set-default', [App\Http\Controllers\User\UserSmsSenderIdController::class, 'setDefault'])
-                ->name('sender-ids.set-default');
-            Route::delete('/sender-ids/{id}', [App\Http\Controllers\User\UserSmsSenderIdController::class, 'destroy'])
-                ->name('sender-ids.destroy');
+                // Contacts
+                Route::get('/contacts', [App\Http\Controllers\User\UserSmsContactController::class, 'index'])
+                    ->name('contacts.index');
+                Route::get('/contacts/create', [App\Http\Controllers\User\UserSmsContactController::class, 'create'])
+                    ->name('contacts.create');
+                Route::post('/contacts', [App\Http\Controllers\User\UserSmsContactController::class, 'store'])
+                    ->name('contacts.store');
+                Route::get('/contacts/bulk-upload', [App\Http\Controllers\User\UserSmsContactController::class, 'bulkCreate'])
+                    ->name('contacts.bulk-upload');
+                Route::post('/contacts/bulk-upload', [App\Http\Controllers\User\UserSmsContactController::class, 'bulkStore'])
+                    ->name('contacts.bulk-store');
+                Route::get('/contacts/download-sample', [App\Http\Controllers\User\UserSmsContactController::class, 'downloadSample'])
+                    ->name('contacts.download-sample');
+                Route::delete('/contacts/{id}', [App\Http\Controllers\User\UserSmsContactController::class, 'destroy'])
+                    ->name('contacts.destroy');
 
-            // Wallet & Credit Purchase
-            Route::get('/wallet', [App\Http\Controllers\User\UserSmsWalletController::class, 'index'])
-                ->name('wallet.index');
-            Route::post('/wallet/purchase', [App\Http\Controllers\User\UserSmsWalletController::class, 'initializePayment'])
-                ->name('wallet.purchase');
-            Route::get('/wallet/payment/callback', [App\Http\Controllers\User\UserSmsWalletController::class, 'handlePaymentCallback'])
-                ->name('payment.callback');
-            Route::get('/transactions/{id}', [App\Http\Controllers\User\UserSmsWalletController::class, 'showTransaction'])
-                ->name('transactions.show');
+                // Sender IDs
+                Route::get('/sender-ids', [App\Http\Controllers\User\UserSmsSenderIdController::class, 'index'])
+                    ->name('sender-ids.index');
+                Route::get('/sender-ids/create', [App\Http\Controllers\User\UserSmsSenderIdController::class, 'create'])
+                    ->name('sender-ids.create');
+                Route::post('/sender-ids', [App\Http\Controllers\User\UserSmsSenderIdController::class, 'store'])
+                    ->name('sender-ids.store');
+                Route::get('/sender-ids/{id}/edit', [App\Http\Controllers\User\UserSmsSenderIdController::class, 'edit'])
+                    ->name('sender-ids.edit');
+                Route::put('/sender-ids/{id}', [App\Http\Controllers\User\UserSmsSenderIdController::class, 'update'])
+                    ->name('sender-ids.update');
+                Route::post('/sender-ids/{id}/set-default', [App\Http\Controllers\User\UserSmsSenderIdController::class, 'setDefault'])
+                    ->name('sender-ids.set-default');
+                Route::delete('/sender-ids/{id}', [App\Http\Controllers\User\UserSmsSenderIdController::class, 'destroy'])
+                    ->name('sender-ids.destroy');
+
+                // Wallet & Credit Purchase
+                Route::get('/wallet', [App\Http\Controllers\User\UserSmsWalletController::class, 'index'])
+                    ->name('wallet.index');
+                Route::post('/wallet/purchase', [App\Http\Controllers\User\UserSmsWalletController::class, 'initializePayment'])
+                    ->name('wallet.purchase');
+                Route::get('/wallet/payment/callback', [App\Http\Controllers\User\UserSmsWalletController::class, 'handlePaymentCallback'])
+                    ->name('payment.callback');
+                Route::get('/transactions/{id}', [App\Http\Controllers\User\UserSmsWalletController::class, 'showTransaction'])
+                    ->name('transactions.show');
+            });
         });
     });
 });

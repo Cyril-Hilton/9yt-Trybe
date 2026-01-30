@@ -19,3 +19,9 @@ Schedule::command('events:send-congratulatory-emails')
 Schedule::command('news:refresh-cache')
         ->hourly()
         ->timezone('Africa/Accra');
+
+// Schedule: Send due scheduled SMS campaigns (runs every minute)
+Schedule::command('sms:send-scheduled-campaigns')
+        ->everyMinute()
+        ->timezone(config('app.timezone'))
+        ->withoutOverlapping();

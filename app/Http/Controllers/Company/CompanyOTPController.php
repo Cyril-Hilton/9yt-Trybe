@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Company;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Services\MnotifyService;
+use App\Support\PhoneNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,7 +27,12 @@ class CompanyOTPController extends Controller
             'phone' => 'required|string',
         ]);
 
-        $company = Company::where('phone', $validated['phone'])->first();
+        $rawPhone = $validated['phone'];
+        $normalizedPhone = PhoneNumber::normalize($rawPhone) ?? $rawPhone;
+
+        $company = Company::where('phone', $normalizedPhone)
+            ->orWhere('phone', $rawPhone)
+            ->first();
 
         if (!$company) {
             return back()->withErrors(['phone' => 'Phone number not found.']);
@@ -41,15 +47,15 @@ class CompanyOTPController extends Controller
 
         // Send OTP via mNotify SMS
         $message = "Your 9yt !Trybe verification code is: {$otp}. Valid for 10 minutes. Do not share this code.";
-        $smsResult = $this->mnotify->sendSMS($company->phone, $message);
+        $smsResult = $this->mnotify->sendSMS($normalizedPhone, $message);
 
         if ($smsResult['success']) {
             \Log::info("OTP sent via SMS to {$company->phone}: {$otp}");
 
             return back()->with([
                 'otp_sent' => true,
-                'phone' => $validated['phone'],
-                'message' => "Verification code sent to {$validated['phone']}"
+                'phone' => $rawPhone,
+                'message' => "Verification code sent to {$rawPhone}"
             ]);
         }
 
@@ -58,7 +64,7 @@ class CompanyOTPController extends Controller
 
         return back()->with([
             'otp_sent' => true,
-            'phone' => $validated['phone'],
+            'phone' => $rawPhone,
             'message' => "OTP sent. For testing (SMS failed), check logs: {$otp}"
         ]);
     }
@@ -73,7 +79,12 @@ class CompanyOTPController extends Controller
             'otp' => 'required|string|size:6',
         ]);
 
-        $company = Company::where('phone', $validated['phone'])->first();
+        $rawPhone = $validated['phone'];
+        $normalizedPhone = PhoneNumber::normalize($rawPhone) ?? $rawPhone;
+
+        $company = Company::where('phone', $normalizedPhone)
+            ->orWhere('phone', $rawPhone)
+            ->first();
 
         if (!$company) {
             return back()->withErrors(['otp' => 'Invalid verification code.']);

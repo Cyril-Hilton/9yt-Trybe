@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Auth\Events\Registered;
+use App\Support\PhoneNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -30,10 +31,13 @@ class UserAuthController extends Controller
             'password' => ['required', 'confirmed', PasswordRule::defaults()],
         ]);
 
+        $phoneInput = $request->input('full_phone') ?? $validated['phone'];
+        $normalizedPhone = PhoneNumber::normalize($phoneInput) ?? $phoneInput;
+
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'phone' => $request->input('full_phone') ?? $validated['phone'],
+            'phone' => $normalizedPhone,
             'password' => Hash::make($validated['password']),
         ]);
 

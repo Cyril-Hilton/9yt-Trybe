@@ -2009,6 +2009,7 @@
                 selectedCategory: 'club',
                 preferredRegion: '{{ request('region') }}',
                 regionOverride: false,
+                regionAutoApplied: false,
                 regionCoordinates: {
                     'Greater Accra': { lat: 5.6037, lng: -0.1870, city: 'Accra' },
                     'Ashanti': { lat: 6.6970, lng: -1.6244, city: 'Kumasi' },
@@ -2129,6 +2130,24 @@
                     }
                 },
 
+                getNearestRegion() {
+                    let closestRegion = null;
+                    let closestDistance = Number.POSITIVE_INFINITY;
+
+                    Object.entries(this.regionCoordinates).forEach(([region, coords]) => {
+                        const latDiff = coords.lat - this.userLat;
+                        const lngDiff = coords.lng - this.userLng;
+                        const distance = Math.hypot(latDiff, lngDiff);
+
+                        if (distance < closestDistance) {
+                            closestDistance = distance;
+                            closestRegion = region;
+                        }
+                    });
+
+                    return closestRegion;
+                },
+
                 applyRegionPreference() {
                     const region = this.regionCoordinates[this.preferredRegion];
                     if (!region) {
@@ -2230,6 +2249,20 @@
                         }
                     } catch (error) {
                         console.log('ℹ️ Using coordinate-based detection (Geocoding API unavailable)');
+                    }
+
+                    // Auto-apply region filter once if not already selected
+                    if (!this.preferredRegion && !this.regionOverride && !this.regionAutoApplied) {
+                        const nearestRegion = this.getNearestRegion();
+                        if (nearestRegion) {
+                            this.regionAutoApplied = true;
+                            const params = new URLSearchParams(window.location.search);
+                            if (!params.get('region')) {
+                                params.set('region', nearestRegion);
+                                window.location.search = params.toString();
+                                return;
+                            }
+                        }
                     }
 
                     // Load venues with new location
@@ -2569,3 +2602,5 @@
     </script>
 </body>
 </html>
+
+

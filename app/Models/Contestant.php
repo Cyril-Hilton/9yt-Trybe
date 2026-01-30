@@ -5,12 +5,31 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Contestant extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected static function booted()
+    {
+        static::creating(function (Contestant $contestant) {
+            if (empty($contestant->contestant_code)) {
+                do {
+                    $code = 'CONT' . Str::upper(Str::random(6));
+                } while (static::withTrashed()->where('contestant_code', $code)->exists());
+
+                $contestant->contestant_code = $code;
+            }
+
+            if (empty($contestant->photo) && !empty($contestant->image)) {
+                $contestant->photo = $contestant->image;
+            }
+        });
+    }
+
     protected $fillable = [
+        'contestant_code',
         'poll_id',
         'contestant_number',
         'name',
@@ -18,6 +37,8 @@ class Contestant extends Model
         'photo',
         'video_url',
         'social_media',
+        'image',
+        'details',
         'status',
         'order',
         'total_votes',

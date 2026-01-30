@@ -14,7 +14,7 @@ class ConferencePolicy
 
     public function view(Company $company, Conference $conference): bool
     {
-        return $company->id === $conference->company_id;
+        return (int) $company->id === (int) $conference->company_id;
     }
 
     public function create(Company $company): bool
@@ -24,11 +24,11 @@ class ConferencePolicy
 
     public function update(Company $company, Conference $conference): bool
     {
-        return $company->id === $conference->company_id;
+        return (int) $company->id === (int) $conference->company_id;
     }
 
     public function delete(Company $company, Conference $conference): bool
     {
-        return $company->id === $conference->company_id;
+        return (int) $company->id === (int) $conference->company_id;
     }
 }

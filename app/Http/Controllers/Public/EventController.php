@@ -46,24 +46,24 @@ class EventController extends Controller
             ->limit(16)
             ->get();
 
-        // 16 regions in Ghana
+        // 16 regions in Ghana (aligned with front-end location mapping)
         $regions = [
             'Greater Accra',
             'Ashanti',
-            'Western',
-            'Eastern',
             'Central',
-            'Northern',
-            'Upper East',
-            'Upper West',
-            'Volta',
-            'Brong Ahafo',
+            'Western',
             'Western North',
-            'Ahafo',
-            'Bono East',
+            'Eastern',
+            'Volta',
             'Oti',
+            'Northern',
             'Savannah',
             'North East',
+            'Upper East',
+            'Upper West',
+            'Bono',
+            'Bono East',
+            'Ahafo',
         ];
 
         $newsArticles = $newsService->getArticles();

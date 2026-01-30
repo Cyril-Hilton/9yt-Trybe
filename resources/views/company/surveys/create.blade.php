@@ -49,8 +49,8 @@
                 <!-- Template Cards -->
                 @foreach($templates as $template)
                     <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-gray-200 cursor-pointer transform hover:scale-105"
-                         :class="{ 'ring-4 ring-indigo-500 border-indigo-500': selectedTemplate === '{{ Str::snake($template['name']) }}' }"
-                         @click="selectedTemplate = '{{ Str::snake($template['name']) }}'; showForm = true">
+                         :class="{ 'ring-4 ring-indigo-500 border-indigo-500': selectedTemplate === '{{ $template['key'] }}' }"
+                         @click="selectedTemplate = '{{ $template['key'] }}'; showForm = true">
                         <div class="p-6">
                             <div class="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg mb-4">
                                 <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

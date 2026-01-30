@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password as PasswordRule;
+use App\Support\PhoneNumber;
 
 class CompanyAuthController extends Controller
 {
@@ -31,10 +32,13 @@ class CompanyAuthController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $phoneInput = $request->input('full_phone') ?? ($validated['phone'] ?? null);
+        $normalizedPhone = PhoneNumber::normalize($phoneInput) ?? $phoneInput;
+
         $company = Company::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'phone' => $request->input('full_phone') ?? ($validated['phone'] ?? null),
+            'phone' => $normalizedPhone,
             'password' => Hash::make($validated['password']),
             'website' => $validated['website'] ?? null,
             'description' => $validated['description'] ?? null,

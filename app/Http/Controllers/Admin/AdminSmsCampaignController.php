@@ -111,14 +111,28 @@ class AdminSmsCampaignController extends Controller
         // Get SMS credit balance
         $creditBalance = $this->smsService->getCreditBalance($admin);
 
+        $totalUsers = User::count();
+        $totalOrganizers = Company::count();
+
         // Get counts for recipient selection
         $stats = [
-            'total_users' => User::count(),
-            'total_organizers' => Company::count(),
-            'total_contacts' => User::count() + Company::count(),
+            'total_users' => $totalUsers,
+            'total_organizers' => $totalOrganizers,
+            'total_contacts' => $totalUsers + $totalOrganizers,
         ];
 
-        return view('admin.sms.send-bulk', compact('senderIds', 'creditBalance', 'stats'));
+        $users = User::orderBy('name')->get();
+        $organizers = Company::orderBy('name')->get();
+
+        return view('admin.sms.send-bulk', compact(
+            'senderIds',
+            'creditBalance',
+            'stats',
+            'users',
+            'organizers',
+            'totalUsers',
+            'totalOrganizers'
+        ));
     }
 
     /**
