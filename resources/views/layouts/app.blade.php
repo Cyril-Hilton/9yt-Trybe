@@ -13,6 +13,34 @@
     <meta name="author" content="9yt !Trybe">
     <meta name="robots" content="@yield('meta_robots', 'index, follow')">
     <link rel="canonical" href="{{ url()->current() }}">
+    @include('components.seo-hreflang')
+    @php
+        $websiteSchema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'name' => '9yt !Trybe',
+            'url' => url('/'),
+            'potentialAction' => [
+                '@type' => 'SearchAction',
+                'target' => url('/search') . '?q={search_term_string}',
+                'query-input' => 'required name=search_term_string',
+            ],
+        ];
+
+        $orgSchema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'Organization',
+            'name' => '9yt !Trybe',
+            'url' => url('/'),
+            'logo' => asset('ui/logo/9yt-trybe-logo-light.png'),
+        ];
+    @endphp
+    <script type="application/ld+json">
+    {!! json_encode($websiteSchema, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}
+    </script>
+    <script type="application/ld+json">
+    {!! json_encode($orgSchema, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}
+    </script>
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="@yield('og_type', 'website')">
@@ -33,6 +61,7 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ asset('ui/logo/9yt-trybe-logo-light.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('ui/logo/9yt-trybe-logo-light.png') }}">
+    <link rel="alternate" type="application/rss+xml" title="9yt !Trybe Blog" href="{{ route('rss') }}">
 
     <!-- Additional SEO Meta Tags -->
     <meta name="theme-color" content="#0891b2">
@@ -517,6 +546,7 @@
         }
     </style>
     @yield('styles')
+    @stack('head')
 </head>
 <body class="bg-white dark:bg-black transition-colors duration-300">
     <!-- Page Loader with Logo -->

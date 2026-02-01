@@ -1,19 +1,28 @@
 @extends('layouts.app')
 
-@section('title', $event->title . ' - Book Tickets | 9yt !Trybe')
+@php
+    $metaTitle = $metaOverrides['meta_title'] ?? ($event->meta_title ?: ($event->title . ' - Book Tickets'));
+    $metaDescription = $metaOverrides['meta_description'] ?? ($event->meta_description ?: Str::limit(strip_tags($event->summary ?? $event->overview ?? ('Book tickets for ' . $event->title)), 155));
+    $metaKeywords = !empty($event->ai_tags)
+        ? implode(', ', $event->ai_tags)
+        : 'event, ' . $event->title . ', tickets, ' . ($event->region ?? 'Ghana') . ', ' . ($event->venue_name ?? 'online event');
+    $shareImage = $event->flier_url;
+@endphp
 
-@section('meta_title', $event->title . ' - Book Tickets')
-@section('meta_description', '{{ Str::limit(strip_tags($event->summary ?? $event->overview ?? "Book tickets for " . $event->title), 155) }}')
-@section('meta_keywords', 'event, {{ $event->title }}, tickets, {{ $event->region ?? "Ghana" }}, {{ $event->venue_name ?? "online event" }}')
+@section('title', $metaTitle . ' | 9yt !Trybe')
+
+@section('meta_title', $metaTitle)
+@section('meta_description', $metaDescription)
+@section('meta_keywords', $metaKeywords)
 
 @section('og_type', 'event')
-@section('og_title', $event->title)
-@section('og_description', '{{ Str::limit(strip_tags($event->summary ?? $event->overview ?? ""), 200) }}')
-@section('og_image', '{{ $event->flier_path ? asset("storage/" . $event->flier_path) : asset("ui/logo/9yt-trybe-logo-light.png") }}')
+@section('og_title', $metaTitle)
+@section('og_description', Str::limit(strip_tags($metaDescription), 200))
+@section('og_image', $shareImage)
 
-@section('twitter_title', $event->title)
-@section('twitter_description', '{{ Str::limit(strip_tags($event->summary ?? $event->overview ?? ""), 200) }}')
-@section('twitter_image', '{{ $event->flier_path ? asset("storage/" . $event->flier_path) : asset("ui/logo/9yt-trybe-logo-light.png") }}')
+@section('twitter_title', $metaTitle)
+@section('twitter_description', Str::limit(strip_tags($metaDescription), 200))
+@section('twitter_image', $shareImage)
 
 @push('head')
 <!-- Schema.org Structured Data for SEO -->
@@ -26,7 +35,7 @@ $schemaData = [
     'description' => strip_tags($event->summary ?? $event->overview ?? $event->title),
     'eventStatus' => 'https://schema.org/EventScheduled',
     'eventAttendanceMode' => 'https://schema.org/' . ($event->location_type === 'venue' ? 'OfflineEventAttendanceMode' : 'OnlineEventAttendanceMode'),
-    'image' => $event->flier_path ? asset('storage/' . $event->flier_path) : asset('ui/logo/9yt-trybe-logo-light.png'),
+    'image' => $event->flier_url,
     'organizer' => [
         '@type' => 'Organization',
         'name' => $event->company->name ?? '9yt !Trybe',
@@ -78,6 +87,39 @@ if ($event->tickets->count() > 0) {
 echo json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 @endphp
 </script>
+@php
+    $faqItems = [];
+    if ($event->faqs->count() > 0) {
+        foreach ($event->faqs as $faq) {
+            $faqItems[] = [
+                '@type' => 'Question',
+                'name' => $faq->question,
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => $faq->answer,
+                ],
+            ];
+        }
+    } elseif (!empty($event->ai_faqs)) {
+        foreach ($event->ai_faqs as $faq) {
+            if (!empty($faq['question']) && !empty($faq['answer'])) {
+                $faqItems[] = [
+                    '@type' => 'Question',
+                    'name' => $faq['question'],
+                    'acceptedAnswer' => [
+                        '@type' => 'Answer',
+                        'text' => $faq['answer'],
+                    ],
+                ];
+            }
+        }
+    }
+@endphp
+@if(!empty($faqItems))
+    <script type="application/ld+json">
+    {!! json_encode(['@context' => 'https://schema.org', '@type' => 'FAQPage', 'mainEntity' => $faqItems], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}
+    </script>
+@endif
 @endpush
 
 @section('styles')
@@ -333,7 +375,7 @@ echo json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                             @if($event->venue_latitude && $event->venue_longitude)
                             <div class="mt-4 h-64 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden border border-cyan-200 dark:border-cyan-800">
                                 <div id="show_map" class="w-full h-full"></div>
-                                @if(config('services.maps.provider', 'osm') === 'google')
+                                @if(config('services.maps.provider', 'osm') === 'google' && config('services.google.maps_api_key'))
                                 <script>
                                     function initShowMap() {
                                         const loc = { lat: {{ $event->venue_latitude }}, lng: {{ $event->venue_longitude }} };
@@ -346,8 +388,27 @@ echo json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                                             map: map,
                                         });
                                     }
+
+                                    function initShowMapFallback() {
+                                        const lat = {{ $event->venue_latitude }};
+                                        const lng = {{ $event->venue_longitude }};
+                                        const map = L.map('show_map').setView([lat, lng], 15);
+                                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                            attribution: '&copy; OpenStreetMap contributors'
+                                        }).addTo(map);
+                                        L.marker([lat, lng]).addTo(map);
+                                    }
                                 </script>
-                                <script src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}&callback=initShowMap" async defer></script>
+                                <script>
+                                    (function() {
+                                        const script = document.createElement('script');
+                                        script.src = 'https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}&callback=initShowMap';
+                                        script.async = true;
+                                        script.defer = true;
+                                        script.onerror = initShowMapFallback;
+                                        document.head.appendChild(script);
+                                    })();
+                                </script>
                                 @else
                                 <script>
                                     document.addEventListener('DOMContentLoaded', function() {
@@ -446,7 +507,7 @@ echo json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                 @endif
 
                 <!-- FAQs -->
-                @if($event->faqs->count() > 0)
+                @if($event->faqs->count() > 0 || !empty($event->ai_faqs))
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-cyan-200 dark:border-cyan-900 p-6 mb-6 transition-colors duration-300 hover-lift">
                     <h2 class="text-2xl font-bold gradient-text mb-4">❓ Frequently Asked Questions</h2>
                     <div class="space-y-4">
@@ -456,6 +517,15 @@ echo json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                             <p class="text-gray-600 dark:text-gray-400">{{ $faq->answer }}</p>
                         </div>
                         @endforeach
+                        @if($event->faqs->count() === 0 && !empty($event->ai_faqs))
+                            @foreach($event->ai_faqs as $faq)
+                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-0">
+                                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">{{ $faq['question'] ?? '' }}</h3>
+                                <p class="text-gray-600 dark:text-gray-400">{{ $faq['answer'] ?? '' }}</p>
+                            </div>
+                            @endforeach
+                        @endif
+
                     </div>
                 </div>
                 @endif

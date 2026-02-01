@@ -1,18 +1,31 @@
 @extends('layouts.app')
 
-@section('title', isset($category) ? $category->name . ' Events - 9yt !Trybe' : 'Browse Events - 9yt !Trybe')
-@section('meta_description', isset($category) ? 'Browse ' . $category->name . ' events and book tickets on 9yt !Trybe.' : 'Browse events and book tickets on 9yt !Trybe.')
+@php
+    $pageTitle = $categoryMeta['meta_title'] ?? (isset($category) ? $category->name . ' Events - 9yt !Trybe' : 'Browse Events - 9yt !Trybe');
+    $pageDescription = $categoryMeta['meta_description'] ?? (isset($category) ? 'Browse ' . $category->name . ' events and book tickets on 9yt !Trybe.' : 'Browse events and book tickets on 9yt !Trybe.');
+@endphp
+
+@section('title', $pageTitle)
+@section('meta_title', $pageTitle)
+@section('meta_description', $pageDescription)
 
 @section('content')
 <!-- Hero Section -->
 <div class="bg-gradient-to-br from-blue-600 via-slate-600 to-gray-700 dark:from-slate-900 dark:via-blue-900 dark:to-gray-900 text-white py-20 relative overflow-hidden">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <h1 class="text-5xl md:text-6xl font-extrabold mb-6 pb-2 text-white drop-shadow-lg">Discover Amazing Events</h1>
+        @php
+            $headline = $categoryMeta['headline'] ?? 'Discover Amazing Events';
+        @endphp
+        <h1 class="text-5xl md:text-6xl font-extrabold mb-6 pb-2 text-white drop-shadow-lg">{{ $headline }}</h1>
         @if(isset($category))
             <p class="text-sm uppercase tracking-widest text-cyan-200 font-semibold mb-2">Category</p>
             <p class="text-2xl md:text-3xl font-bold text-white mb-4">{{ $category->name }}</p>
         @endif
-        <p class="text-xl md:text-2xl text-blue-100 dark:text-slate-300 mb-8">Find and book tickets for conferences, workshops, and more</p>
+        @if(!empty($categoryIntro))
+            <p class="text-xl md:text-2xl text-blue-100 dark:text-slate-300 mb-8">{{ $categoryIntro }}</p>
+        @else
+            <p class="text-xl md:text-2xl text-blue-100 dark:text-slate-300 mb-8">Find and book tickets for conferences, workshops, and more</p>
+        @endif
 
         <!-- Search Bar -->
         <form action="{{ route('events.index') }}" method="GET" class="flex flex-col md:flex-row gap-4">

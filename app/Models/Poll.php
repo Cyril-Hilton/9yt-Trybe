@@ -35,6 +35,8 @@ class Poll extends Model
         'views_count',
         'meta_title',
         'meta_description',
+        'ai_tags',
+        'ai_faqs',
     ];
 
     protected $casts = [
@@ -45,6 +47,8 @@ class Poll extends Model
         'allow_multiple_votes' => 'boolean',
         'show_results' => 'boolean',
         'require_login' => 'boolean',
+        'ai_tags' => 'array',
+        'ai_faqs' => 'array',
     ];
 
     // Boot method to auto-generate slug
@@ -137,10 +141,15 @@ class Poll extends Model
 
     public function getBannerUrlAttribute()
     {
-        if ($this->banner_image) {
-            return asset('storage/' . $this->banner_image);
+        if (!$this->banner_image) {
+            return asset('images/default-poll-banner.jpg');
         }
-        return asset('images/default-poll-banner.jpg');
+
+        if (str_starts_with($this->banner_image, 'http://') || str_starts_with($this->banner_image, 'https://')) {
+            return $this->banner_image;
+        }
+
+        return asset('storage/' . $this->banner_image);
     }
 
     public function getPublicUrlAttribute()

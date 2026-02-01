@@ -15,6 +15,8 @@ class Category extends Model
         'icon_svg',
         'color',
         'description',
+        'meta_title',
+        'meta_description',
         'order',
         'is_active',
     ];

@@ -9,6 +9,8 @@ use App\Models\Event;
 use App\Models\Poll;
 use App\Models\ShopProduct;
 use App\Models\Survey;
+use App\Models\Article;
+use Illuminate\Support\Str;
 
 class SitemapController extends Controller
 {
@@ -30,6 +32,10 @@ class SitemapController extends Controller
             ['/shop', now(), 'weekly', '0.7'],
             ['/organizers', now(), 'weekly', '0.6'],
             ['/polls', now(), 'weekly', '0.6'],
+            ['/news', now(), 'daily', '0.7'],
+            ['/blog', now(), 'daily', '0.7'],
+            ['/today', now(), 'daily', '0.7'],
+            ['/this-weekend', now(), 'weekly', '0.7'],
             ['/jobs', now(), 'monthly', '0.4'],
             ['/team', now(), 'monthly', '0.4'],
             ['/about', now(), 'monthly', '0.3'],
@@ -55,8 +61,35 @@ class SitemapController extends Controller
 
         foreach ($events as $event) {
             $url = "/events/{$event->slug}";
-            $image = $event->flier_path ? asset('storage/' . $event->flier_path) : null;
+            $image = $event->flier_path ? $event->flier_url : null;
             $sitemap .= $this->addUrl($url, $event->updated_at, 'weekly', '0.8', $image);
+        }
+
+        // Region landing pages
+        $regions = Event::approved()
+            ->whereNotNull('region')
+            ->where('region', '!=', '')
+            ->distinct()
+            ->pluck('region');
+
+        foreach ($regions as $region) {
+            $slug = Str::slug($region);
+            $url = "/locations/{$slug}";
+            $sitemap .= $this->addUrl($url, now(), 'weekly', '0.6');
+        }
+
+        // Blog articles
+        $blogArticles = Article::where('type', 'blog')
+            ->where('is_published', true)
+            ->whereNotNull('slug')
+            ->where('slug', '!=', '')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        foreach ($blogArticles as $article) {
+            $url = "/blog/{$article->slug}";
+            $image = $article->image_path ? $article->image_url : null;
+            $sitemap .= $this->addUrl($url, $article->updated_at, 'weekly', '0.7', $image);
         }
 
         // Categories

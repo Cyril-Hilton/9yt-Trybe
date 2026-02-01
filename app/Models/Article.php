@@ -14,12 +14,16 @@ class Article extends Model
     protected $fillable = [
         'title',
         'slug',
+        'type',
+        'category',
         'description',
         'content',
         'image_path',
         'source_name',
         'source_url',
         'author',
+        'meta_title',
+        'meta_description',
         'is_published',
         'published_at',
     ];
@@ -40,5 +44,10 @@ class Article extends Model
         }
 
         return asset('storage/' . $this->image_path);
+    }
+
+    public function getPublicUrlAttribute(): string
+    {
+        return url('/blog/' . $this->slug);
     }
 }

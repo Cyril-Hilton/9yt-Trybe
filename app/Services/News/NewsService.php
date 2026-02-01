@@ -3,6 +3,7 @@
 namespace App\Services\News;
 
 use App\Models\Article;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -43,7 +44,9 @@ class NewsService
             }
 
             // Merge local and external articles, prioritizing local
-            return array_merge($localArticles, $externalArticles);
+            $merged = array_merge($localArticles, $externalArticles);
+
+            return $this->normalizeArticles($merged);
         });
     }
 
@@ -284,7 +287,8 @@ class NewsService
     private function fetchLocalArticles(?string $query = null): array
     {
         try {
-            $queryBuilder = Article::where('is_published', true);
+            $queryBuilder = Article::where('is_published', true)
+                ->where('type', 'news');
 
             if ($query) {
                 $defaultQuery = trim(config('services.news.default_query'));
@@ -348,5 +352,57 @@ class NewsService
             report($e);
             return [];
         }
+    }
+
+    private function normalizeArticles(array $articles): array
+    {
+        $maxAgeDays = (int) config('services.news.max_age_days', 21);
+        $maxResults = (int) config('services.news.max_results', 20);
+        $now = now();
+
+        $normalized = collect($articles)
+            ->map(function ($article) use ($now) {
+                $publishedAt = $article['published_at'] ?? null;
+                $parsed = null;
+
+                if (!empty($publishedAt)) {
+                    try {
+                        $parsed = Carbon::parse($publishedAt);
+                    } catch (\Throwable $e) {
+                        $parsed = null;
+                    }
+                }
+
+                $article['_published_at'] = $parsed ?: $now;
+
+                return $article;
+            })
+            ->filter(function ($article) use ($maxAgeDays, $now) {
+                if (!$article['_published_at'] instanceof Carbon) {
+                    return true;
+                }
+
+                return $article['_published_at']->diffInDays($now) <= $maxAgeDays;
+            })
+            ->unique(function ($article) {
+                $url = trim((string) ($article['url'] ?? ''));
+                if ($url !== '') {
+                    return $url;
+                }
+
+                return Str::slug((string) ($article['title'] ?? ''));
+            })
+            ->sortByDesc(function ($article) {
+                return $article['_published_at'];
+            })
+            ->values()
+            ->map(function ($article) {
+                unset($article['_published_at']);
+                return $article;
+            })
+            ->take($maxResults)
+            ->all();
+
+        return $normalized;
     }
 }

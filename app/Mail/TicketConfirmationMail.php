@@ -81,7 +81,8 @@ class TicketConfirmationMail extends Mailable
 
         $embeddedBannerCid = null;
         $bannerPath = $this->order->event?->flier_path;
-        if ($bannerPath && Storage::disk('public')->exists($bannerPath)) {
+        $hasRemoteBanner = $bannerPath && (str_starts_with($bannerPath, 'http://') || str_starts_with($bannerPath, 'https://'));
+        if ($bannerPath && !$hasRemoteBanner && Storage::disk('public')->exists($bannerPath)) {
             $bannerData = Storage::disk('public')->get($bannerPath);
             $bannerMime = Storage::disk('public')->mimeType($bannerPath) ?: 'image/jpeg';
             $embeddedBannerCid = 'cid:event-banner@conference-portal';

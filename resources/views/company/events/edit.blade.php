@@ -59,6 +59,48 @@
                     @error('summary')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
 
+                <div class="mb-6" x-data="aiEventCopy()">
+                    <div class="rounded-xl border border-cyan-200 bg-cyan-50/70 p-4">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <h3 class="text-sm font-bold text-cyan-900">AI Copy Assistant</h3>
+                            <span class="text-xs text-cyan-700">Generates summary + overview</span>
+                        </div>
+                        <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Audience (Optional)</label>
+                                <input type="text" x-model="audience"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                       placeholder="e.g., young professionals, music lovers">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Tone</label>
+                                <select x-model="tone"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                                    <option value="inspiring, premium, and clear">Inspiring & Premium</option>
+                                    <option value="energetic and bold">Energetic & Bold</option>
+                                    <option value="professional and informative">Professional</option>
+                                    <option value="playful and trendy">Playful & Trendy</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Key Points</label>
+                                <input type="text" x-model="keyPoints"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                       placeholder="Headliners, activities, perks">
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-center gap-3">
+                            <button type="button" @click="generateCopy"
+                                    class="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-semibold hover:bg-cyan-700 transition"
+                                    :disabled="loading">
+                                <span x-show="!loading">Generate with AI</span>
+                                <span x-show="loading">Generating...</span>
+                            </button>
+                            <span x-text="statusMessage" class="text-xs text-gray-600"></span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-3">
                         Event Categories <span class="text-red-500">*</span>
@@ -600,6 +642,76 @@ function eventForm() {
     }
 }
 
+function aiEventCopy() {
+    return {
+        audience: '',
+        tone: 'inspiring, premium, and clear',
+        keyPoints: '',
+        loading: false,
+        statusMessage: '',
+        async generateCopy() {
+            const title = document.querySelector('input[name="title"]')?.value || '';
+            if (!title.trim()) {
+                this.statusMessage = 'Add an event title first.';
+                return;
+            }
+
+            this.loading = true;
+            this.statusMessage = 'Thinking...';
+
+            const payload = {
+                title: title,
+                summary: document.querySelector('textarea[name="summary"]')?.value || '',
+                overview: document.querySelector('textarea[name="overview"]')?.value || '',
+                event_type: document.querySelector('select[name="event_type"]')?.value || '',
+                start_date: document.querySelector('input[name="start_date"]')?.value || '',
+                end_date: document.querySelector('input[name="end_date"]')?.value || '',
+                location_type: document.querySelector('select[name="location_type"]')?.value || '',
+                venue_name: document.querySelector('input[name="venue_name"]')?.value || '',
+                region: document.querySelector('select[name="region"]')?.value || '',
+                online_platform: document.querySelector('select[name="online_platform"]')?.value || '',
+                audience: this.audience,
+                tone: this.tone,
+                key_points: this.keyPoints,
+                categories: Array.from(document.querySelectorAll('input[name="categories[]"]:checked')).map(el => el.value),
+            };
+
+            try {
+                const response = await fetch('{{ route('organization.ai.event-copy') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    this.statusMessage = data.message || 'AI is unavailable right now.';
+                    return;
+                }
+
+                if (data.data?.summary) {
+                    const summaryField = document.querySelector('textarea[name="summary"]');
+                    if (summaryField) summaryField.value = data.data.summary;
+                }
+                if (data.data?.overview) {
+                    const overviewField = document.querySelector('textarea[name="overview"]');
+                    if (overviewField) overviewField.value = data.data.overview;
+                }
+
+                this.statusMessage = 'Copy generated. Review and edit as needed.';
+            } catch (error) {
+                console.error('AI copy error:', error);
+                this.statusMessage = 'AI request failed. Please try again.';
+            } finally {
+                this.loading = false;
+            }
+        }
+    }
+}
+
 function ticketManager() {
     @php
         $initialTickets = [];
@@ -658,12 +770,23 @@ function ticketManager() {
     }
 }
 
+let mapsProvider = "{{ config('services.maps.provider', 'osm') }}";
+
+function setMapsProvider(nextProvider) {
+    mapsProvider = nextProvider;
+    document.dispatchEvent(new CustomEvent('maps-provider-changed', { detail: nextProvider }));
+}
+
 function addressAutocomplete() {
     return {
-        provider: "{{ config('services.maps.provider', 'osm') }}",
+        provider: mapsProvider,
         query: "{{ old('venue_address', $event->venue_address) }}",
         suggestions: [],
         init() {
+            this.provider = mapsProvider;
+            document.addEventListener('maps-provider-changed', (event) => {
+                this.provider = event.detail;
+            });
             if (this.provider === 'google') {
                 // Google initialization is handled in initMap
             }
@@ -704,10 +827,9 @@ function addressAutocomplete() {
 let map;
 let marker;
 let autocomplete;
-const provider = "{{ config('services.maps.provider', 'osm') }}";
 
 function initMap() {
-    if (provider === 'google') {
+    if (mapsProvider === 'google') {
         initGoogleMap();
     } else {
         initOSMMap();
@@ -781,7 +903,7 @@ function updateOSMMap(lat, lng) {
 }
 
 function reverseGeocode(lat, lng) {
-    if (provider === 'google') {
+    if (mapsProvider === 'google') {
         const geocoder = new google.maps.Geocoder();
         geocoder.geocode({ location: { lat, lng } }, (results, status) => {
             if (status === 'OK' && results[0]) {
@@ -809,13 +931,21 @@ function updateGoogleMap(location) {
 
 // Load appropriate API
 (function() {
-    if (provider === 'google') {
+    if (mapsProvider === 'google') {
         const apiKey = '{{ env('GOOGLE_MAPS_API_KEY') }}';
         if (apiKey) {
             const script = document.createElement('script');
             script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap`;
-            script.async = true; script.defer = true;
+            script.async = true;
+            script.defer = true;
+            script.onerror = () => {
+                setMapsProvider('osm');
+                initMap();
+            };
             document.head.appendChild(script);
+        } else {
+            setMapsProvider('osm');
+            window.addEventListener('load', initMap);
         }
     } else {
         // OSM/Leaflet is already loaded in layout

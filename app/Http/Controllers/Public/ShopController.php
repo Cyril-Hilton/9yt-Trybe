@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\ShopProduct;
 use App\Models\CartItem;
+use App\Services\SEO\AiTranslationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ShopController extends Controller
 {
@@ -19,7 +21,7 @@ class ShopController extends Controller
         return view('public.shop.index', compact('products'));
     }
 
-    public function show(ShopProduct $product)
+    public function show(Request $request, ShopProduct $product)
     {
         if (!$product->isApproved() || !$product->is_active) {
             abort(404);
@@ -33,7 +35,16 @@ class ShopController extends Controller
             ->take(4)
             ->get();
 
-        return view('public.shop.show', compact('product', 'relatedProducts'));
+        $metaOverrides = null;
+        $translator = app(AiTranslationService::class);
+        $lang = $translator->resolveLanguage($request->query('lang'));
+        if ($lang !== 'en') {
+            $baseTitle = $product->meta_title ?: ($product->name . ' - Shop');
+            $baseDescription = $product->meta_description ?: Str::limit(strip_tags($product->description ?? ''), 155);
+            $metaOverrides = $translator->translateMeta($baseTitle, $baseDescription, $lang);
+        }
+
+        return view('public.shop.show', compact('product', 'relatedProducts', 'metaOverrides'));
     }
 
     public function cart()

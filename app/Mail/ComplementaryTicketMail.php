@@ -27,6 +27,7 @@ class ComplementaryTicketMail extends Mailable
     public function build()
     {
         $attendee = $this->attendee->load(['event', 'ticket']);
+        $event = $attendee->event;
         $embeddedCid = null;
         $qrCodeUrl = $attendee->ticket_code
             ? 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode($attendee->ticket_code)
@@ -75,7 +76,8 @@ class ComplementaryTicketMail extends Mailable
 
         $embeddedBannerCid = null;
         $bannerPath = $event->flier_path;
-        if ($bannerPath && Storage::disk('public')->exists($bannerPath)) {
+        $hasRemoteBanner = $bannerPath && (str_starts_with($bannerPath, 'http://') || str_starts_with($bannerPath, 'https://'));
+        if ($bannerPath && !$hasRemoteBanner && Storage::disk('public')->exists($bannerPath)) {
             $bannerData = Storage::disk('public')->get($bannerPath);
             $bannerMime = Storage::disk('public')->mimeType($bannerPath) ?: 'image/jpeg';
             $bannerContentId = 'event-banner-' . $attendee->id . '@conference-portal';

@@ -15,7 +15,7 @@ class Conference extends Model
     use HasFactory;
 
     protected $fillable = [
-        'company_id', 'title', 'description', 'slug', 'logo', 'header_image', 'venue',
+        'company_id', 'title', 'description', 'meta_title', 'meta_description', 'slug', 'logo', 'header_image', 'venue',
         'start_date', 'end_date', 'online_limit', 'in_person_limit',
         'online_count', 'in_person_count', 'status', 'form_fields', 'views_count',
     ];

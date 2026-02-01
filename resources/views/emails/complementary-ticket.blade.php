@@ -221,7 +221,7 @@
             <!-- Event Flier -->
             @if($event->flier_path)
                 <div style="text-align: center; margin: 30px 0;">
-                    <img src="{{ $embeddedBannerCid ?? asset('storage/' . $event->flier_path) }}" alt="{{ $event->title }}" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                    <img src="{{ $embeddedBannerCid ?? $event->flier_url }}" alt="{{ $event->title }}" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                 </div>
             @endif
 

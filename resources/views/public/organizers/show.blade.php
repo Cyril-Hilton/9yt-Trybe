@@ -1,7 +1,47 @@
 @extends('layouts.app')
 
-@section('title', $organizer->name . ' - Organizer')
-@section('meta_description', $organizer->description ? Str::limit($organizer->description, 150) : 'Organizer profile and events on 9yt !Trybe.')
+@php
+    $metaTitle = $metaOverrides['meta_title'] ?? ($organizer->meta_title ?: ($organizer->name . ' - Organizer'));
+    $metaDescription = $metaOverrides['meta_description'] ?? ($organizer->meta_description ?: ($organizer->description ? Str::limit($organizer->description, 150) : 'Organizer profile and events on 9yt !Trybe.'));
+    $metaKeywords = !empty($organizer->ai_tags) ? implode(', ', $organizer->ai_tags) : $organizer->name . ', event organizer, events, tickets';
+    $shareImage = $organizer->logo_url ?: asset('ui/logo/9yt-trybe-logo-light.png');
+@endphp
+
+@section('title', $metaTitle)
+@section('meta_title', $metaTitle)
+@section('meta_description', $metaDescription)
+@section('meta_keywords', $metaKeywords)
+@section('og_title', $metaTitle)
+@section('og_description', $metaDescription)
+@section('og_image', $shareImage)
+@section('twitter_title', $metaTitle)
+@section('twitter_description', $metaDescription)
+@section('twitter_image', $shareImage)
+
+@push('head')
+@php
+    $faqItems = [];
+    if (!empty($organizer->ai_faqs)) {
+        foreach ($organizer->ai_faqs as $faq) {
+            if (!empty($faq['question']) && !empty($faq['answer'])) {
+                $faqItems[] = [
+                    '@type' => 'Question',
+                    'name' => $faq['question'],
+                    'acceptedAnswer' => [
+                        '@type' => 'Answer',
+                        'text' => $faq['answer'],
+                    ],
+                ];
+            }
+        }
+    }
+@endphp
+@if(!empty($faqItems))
+    <script type="application/ld+json">
+    {!! json_encode(['@context' => 'https://schema.org', '@type' => 'FAQPage', 'mainEntity' => $faqItems], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}
+    </script>
+@endif
+@endpush
 
 @section('content')
 <div class="bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 text-white py-14">
@@ -89,5 +129,19 @@
             </div>
         @endif
     </section>
+
+    @if(!empty($organizer->ai_faqs))
+        <section>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Organizer FAQs</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+                @foreach($organizer->ai_faqs as $faq)
+                    <div class="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-0">
+                        <h3 class="font-semibold text-gray-900 dark:text-white mb-2">{{ $faq['question'] ?? '' }}</h3>
+                        <p class="text-gray-600 dark:text-gray-400">{{ $faq['answer'] ?? '' }}</p>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+    @endif
 </div>
 @endsection

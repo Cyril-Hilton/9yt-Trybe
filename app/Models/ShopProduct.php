@@ -11,6 +11,8 @@ class ShopProduct extends Model
         'name',
         'slug',
         'description',
+        'meta_title',
+        'meta_description',
         'price',
         'image',
         'image_path',
@@ -22,12 +24,16 @@ class ShopProduct extends Model
         'status',
         'rejection_reason',
         'is_active',
+        'ai_tags',
+        'ai_faqs',
     ];
 
     protected $casts = [
         'additional_images' => 'array',
         'is_active' => 'boolean',
         'price' => 'decimal:2',
+        'ai_tags' => 'array',
+        'ai_faqs' => 'array',
     ];
 
     protected static function boot()

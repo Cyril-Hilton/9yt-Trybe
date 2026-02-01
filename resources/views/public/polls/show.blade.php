@@ -1,7 +1,8 @@
 @extends('layouts.app')
 
-@section('title', $poll->title . ' - Poll')
-@section('meta_description', $poll->description ? Str::limit($poll->description, 150) : 'Poll details and contestants on 9yt !Trybe.')
+@section('title', ($poll->meta_title ?: $poll->title) . ' - Poll')
+@section('meta_title', $poll->meta_title ?: ($poll->title . ' - Poll'))
+@section('meta_description', $poll->meta_description ?: ($poll->description ? Str::limit($poll->description, 150) : 'Poll details and contestants on 9yt !Trybe.'))
 
 @section('content')
 <div class="bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white py-12">

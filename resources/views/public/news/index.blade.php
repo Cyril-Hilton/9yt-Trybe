@@ -34,6 +34,34 @@
                 Source attribution is required. Articles link to the original publishers.
             </div>
 
+            @if(!empty($aiDigest))
+                <div class="mt-6 rounded-2xl border border-cyan-200 dark:border-cyan-800 bg-cyan-50/40 dark:bg-cyan-900/20 p-6">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <p class="text-xs uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-300 font-semibold">AI Digest</p>
+                        @if(!empty($aiDigest['topics']))
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                @foreach($aiDigest['topics'] as $topic)
+                                    <span class="px-2 py-1 rounded-full bg-white/70 dark:bg-black/40 text-cyan-700 dark:text-cyan-200 border border-cyan-200/70 dark:border-cyan-700/60">
+                                        {{ $topic }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                    <h2 class="mt-3 text-xl font-bold text-gray-900 dark:text-white">{{ $aiDigest['headline'] ?? '' }}</h2>
+                    @if(!empty($aiDigest['bullets']))
+                        <ul class="mt-3 space-y-2 text-sm text-gray-700 dark:text-gray-200">
+                            @foreach($aiDigest['bullets'] as $bullet)
+                                <li class="flex gap-2">
+                                    <span class="mt-1 w-2 h-2 rounded-full bg-cyan-500"></span>
+                                    <span>{{ $bullet }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            @endif
+
             @if(empty($articles))
                 <div class="mt-12 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 p-10 text-center">
                     <p class="text-gray-700 dark:text-gray-300">No articles yet. Add your API key and try again.</p>

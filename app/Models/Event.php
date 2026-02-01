@@ -52,6 +52,8 @@ class Event extends Model
         'total_revenue',
         'meta_title',
         'meta_description',
+        'ai_tags',
+        'ai_faqs',
         'is_external',
         'external_ticket_url',
         'external_ussd_code',
@@ -73,6 +75,8 @@ class Event extends Model
         'venue_longitude' => 'decimal:8',
         'is_external' => 'boolean',
         'is_holiday' => 'boolean',
+        'ai_tags' => 'array',
+        'ai_faqs' => 'array',
     ];
 
     // Boot method to auto-generate slug
@@ -229,6 +233,36 @@ class Event extends Model
         }
 
         return $banner;
+    }
+
+    public function getFlierUrlAttribute(): string
+    {
+        $path = $this->flier_path;
+
+        if (!$path) {
+            return asset('ui/logo/9yt-trybe-logo-light.png');
+        }
+
+        if ($this->isRemotePath($path)) {
+            return $path;
+        }
+
+        return asset('storage/' . $path);
+    }
+
+    public function hasLocalFlier(): bool
+    {
+        $path = $this->flier_path;
+        if (!$path) {
+            return false;
+        }
+
+        return !$this->isRemotePath($path);
+    }
+
+    private function isRemotePath(string $path): bool
+    {
+        return Str::startsWith($path, ['http://', 'https://']);
     }
 
     public function getPublicUrlAttribute()

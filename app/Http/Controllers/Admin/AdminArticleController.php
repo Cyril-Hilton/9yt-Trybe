@@ -30,6 +30,10 @@ class AdminArticleController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'source_name' => 'nullable|string',
             'source_url' => 'nullable|url',
+            'type' => 'nullable|in:news,blog',
+            'category' => 'nullable|string|max:80',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:1000',
         ]);
 
         $slug = Str::slug($request->title);
@@ -46,12 +50,16 @@ class AdminArticleController extends Controller
         Article::create([
             'title' => $request->title,
             'slug' => $slug,
+            'type' => $request->input('type', 'blog'),
+            'category' => $request->input('category'),
             'description' => $request->summary,
             'content' => $request->content,
             'image_path' => $imagePath,
             'source_name' => $request->source_name ?? '9yt !Trybe',
             'source_url' => $request->source_url ?? url('/'),
             'author' => auth('admin')->user()->name ?? 'Admin',
+            'meta_title' => $request->input('meta_title'),
+            'meta_description' => $request->input('meta_description'),
             'is_published' => $request->has('is_published'),
             'published_at' => $request->has('is_published') ? now() : null,
         ]);
@@ -73,6 +81,10 @@ class AdminArticleController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'source_name' => 'nullable|string',
             'source_url' => 'nullable|url',
+            'type' => 'nullable|in:news,blog',
+            'category' => 'nullable|string|max:80',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:1000',
         ]);
 
         if ($request->hasFile('image')) {
@@ -84,11 +96,15 @@ class AdminArticleController extends Controller
 
         $article->update([
             'title' => $request->title,
+            'type' => $request->input('type', $article->type ?? 'blog'),
+            'category' => $request->input('category'),
             'description' => $request->summary,
             'content' => $request->content,
             'image_path' => $article->image_path,
             'source_name' => $request->source_name ?? $article->source_name,
             'source_url' => $request->source_url ?? $article->source_url,
+            'meta_title' => $request->input('meta_title'),
+            'meta_description' => $request->input('meta_description'),
             'is_published' => $request->has('is_published'),
             'published_at' => $request->has('is_published') ? ($article->published_at ?? now()) : null,
         ]);

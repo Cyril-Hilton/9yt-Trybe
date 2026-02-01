@@ -1497,6 +1497,34 @@
             </div>
 
             @if(!empty($newsArticles))
+                @if(!empty($newsDigest))
+                    <div class="mt-6 rounded-2xl border border-cyan-200 dark:border-cyan-800 bg-cyan-50/40 dark:bg-cyan-900/20 p-6">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <p class="text-xs uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-300 font-semibold">AI Digest</p>
+                            @if(!empty($newsDigest['topics']))
+                                <div class="flex flex-wrap gap-2 text-xs">
+                                    @foreach($newsDigest['topics'] as $topic)
+                                        <span class="px-2 py-1 rounded-full bg-white/70 dark:bg-black/40 text-cyan-700 dark:text-cyan-200 border border-cyan-200/70 dark:border-cyan-700/60">
+                                            {{ $topic }}
+                                        </span>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+                        <h3 class="mt-3 text-lg font-bold text-gray-900 dark:text-white">{{ $newsDigest['headline'] ?? '' }}</h3>
+                        @if(!empty($newsDigest['bullets']))
+                            <ul class="mt-3 space-y-2 text-sm text-gray-700 dark:text-gray-200">
+                                @foreach($newsDigest['bullets'] as $bullet)
+                                    <li class="flex gap-2">
+                                        <span class="mt-1 w-2 h-2 rounded-full bg-cyan-500"></span>
+                                        <span>{{ $bullet }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    </div>
+                @endif
+
                 <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @foreach(array_slice($newsArticles, 0, 6) as $article)
                         <article class="rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition">
@@ -2222,11 +2250,14 @@
                     this.userCity = detectCity(this.userLat, this.userLng);
                     console.log('📍 City detected from GPS:', this.userCity, `(${this.userLat.toFixed(4)}, ${this.userLng.toFixed(4)})`);
 
-                    // Try reverse geocoding for more specific name (using Nominatim for OSM)
+                    // Try reverse geocoding for more specific name (with Google -> OSM fallback)
                     try {
                         const provider = "{{ config('services.maps.provider', 'osm') }}";
-                        if (provider === 'google') {
-                            const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${this.userLat},${this.userLng}&key={{ config('services.google.maps_api_key') }}`);
+                        const googleKey = "{{ config('services.google.maps_api_key') }}";
+                        let googleSucceeded = false;
+
+                        if (provider === 'google' && googleKey) {
+                            const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${this.userLat},${this.userLng}&key=${googleKey}`);
                             const data = await response.json();
 
                             if (data.status === 'OK' && data.results && data.results[0]) {
@@ -2235,10 +2266,13 @@
 
                                 if (areaComponent || cityComponent) {
                                     this.userCity = areaComponent?.long_name || cityComponent?.long_name;
+                                    googleSucceeded = true;
                                     console.log('✨ Enhanced location from Google:', this.userCity);
                                 }
                             }
-                        } else {
+                        }
+
+                        if (!googleSucceeded) {
                             const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${this.userLat}&lon=${this.userLng}&format=json&accept-language=en`);
                             const data = await response.json();
 

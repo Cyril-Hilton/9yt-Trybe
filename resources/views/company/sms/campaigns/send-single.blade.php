@@ -103,6 +103,64 @@
                     @endif
                 </div>
 
+                <!-- AI SMS Assistant -->
+                <div class="mb-6" x-data="aiSmsAssistant()">
+                    <div class="rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <h3 class="text-sm font-bold text-blue-900">AI SMS Assistant</h3>
+                            <span class="text-xs text-blue-700">Generate a compliant SMS draft</span>
+                        </div>
+                        <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Purpose</label>
+                                <input type="text" x-model="purpose"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                       placeholder="e.g., event reminder, promo">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Tone</label>
+                                <select x-model="tone"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    <option value="friendly and professional">Friendly & Professional</option>
+                                    <option value="urgent and action-oriented">Urgent & Action-Oriented</option>
+                                    <option value="warm and celebratory">Warm & Celebratory</option>
+                                    <option value="minimal and direct">Minimal & Direct</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Key Details *</label>
+                                <input type="text" x-model="details"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                       placeholder="Event name, date, offer, location, link">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">CTA (Optional)</label>
+                                <input type="text" x-model="cta"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                       placeholder="Book now, Reply YES, Visit link">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Max Length</label>
+                                <select x-model="maxLength"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    <option value="160">160 chars</option>
+                                    <option value="320">320 chars</option>
+                                    <option value="480">480 chars</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-center gap-3">
+                            <button type="button" @click="generateSms"
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
+                                    :disabled="loading">
+                                <span x-show="!loading">Generate SMS</span>
+                                <span x-show="loading">Generating...</span>
+                            </button>
+                            <span x-text="statusMessage" class="text-xs text-gray-600"></span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Message -->
                 <div class="mb-6" x-data="{ message: '{{ old('message') }}', maxLength: 1000 }">
                     <label class="block text-sm font-bold text-gray-700 mb-2">
@@ -186,4 +244,63 @@
         </div>
     </div>
 </div>
+
+<script>
+function aiSmsAssistant() {
+    return {
+        purpose: '',
+        details: '',
+        cta: '',
+        tone: 'friendly and professional',
+        maxLength: 160,
+        loading: false,
+        statusMessage: '',
+        async generateSms() {
+            if (!this.details.trim()) {
+                this.statusMessage = 'Add key details first.';
+                return;
+            }
+
+            this.loading = true;
+            this.statusMessage = 'Thinking...';
+
+            try {
+                const response = await fetch('{{ route('organization.ai.sms-draft') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        purpose: this.purpose,
+                        details: this.details,
+                        cta: this.cta,
+                        tone: this.tone,
+                        max_length: this.maxLength
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    this.statusMessage = data.message || 'AI is unavailable right now.';
+                    return;
+                }
+
+                const messageField = document.querySelector('textarea[name="message"]');
+                if (messageField) {
+                    messageField.value = data.data.message || '';
+                    messageField.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+
+                this.statusMessage = 'Draft ready. Review and send.';
+            } catch (error) {
+                console.error('AI SMS error:', error);
+                this.statusMessage = 'AI request failed. Please try again.';
+            } finally {
+                this.loading = false;
+            }
+        }
+    }
+}
+</script>
 @endsection

@@ -55,7 +55,7 @@
             <!-- Poll Banner -->
             <div class="h-48 bg-gradient-to-br from-cyan-500 to-blue-600 relative">
                 @if($poll->banner_image)
-                <img src="{{ asset('storage/' . $poll->banner_image) }}" alt="{{ $poll->title }}" class="w-full h-full object-cover">
+                <img src="{{ $poll->banner_url }}" alt="{{ $poll->title }}" class="w-full h-full object-cover">
                 @endif
 
                 <!-- Status Badge -->

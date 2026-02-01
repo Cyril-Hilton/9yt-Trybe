@@ -36,11 +36,8 @@ class NearbyVenuesController extends Controller
         }
 
         if ($this->provider === 'google' && !$this->apiKey) {
-            return response()->json([
-                'places' => [],
-                'total_results' => 0,
-                'error' => 'Google Places API key not configured.',
-            ]);
+            // Auto-fallback to OSM when Google key is missing
+            $this->provider = 'osm';
         }
 
         $validated = $request->validate([
@@ -65,6 +62,14 @@ class NearbyVenuesController extends Controller
 
         if ($this->provider === 'google') {
             $response = $this->fetchFromGooglePlaces($validated);
+            $payload = $response->getData(true);
+
+            if ($this->shouldFallbackToOsm($payload)) {
+                $fallbackResponse = $this->fetchFromOSM($validated);
+                $fallbackPayload = $fallbackResponse->getData(true);
+                $fallbackPayload['fallback_from'] = 'google';
+                $response = response()->json($fallbackPayload);
+            }
         } else {
             $response = $this->fetchFromOSM($validated);
         }
@@ -191,6 +196,8 @@ class NearbyVenuesController extends Controller
         $configs = $this->getSearchConfigs($params['category']);
         $allPlaces = [];
         $photoReferences = [];
+        $lastStatus = null;
+        $lastErrorMessage = null;
 
         foreach ($configs as $config) {
             $url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
@@ -207,7 +214,16 @@ class NearbyVenuesController extends Controller
                 $response = Http::get($url, $query);
                 
                 if ($response->successful()) {
-                    $results = $response->json()['results'] ?? [];
+                    $payload = $response->json();
+                    $status = $payload['status'] ?? null;
+                    $lastStatus = $status ?? $lastStatus;
+                    $lastErrorMessage = $payload['error_message'] ?? $lastErrorMessage;
+
+                    if (!empty($status) && $status !== 'OK' && $status !== 'ZERO_RESULTS') {
+                        continue;
+                    }
+
+                    $results = $payload['results'] ?? [];
                     
                     foreach ($results as $place) {
                         if (!isset($allPlaces[$place['place_id']])) {
@@ -238,6 +254,7 @@ class NearbyVenuesController extends Controller
                 }
             } catch (\Exception $e) {
                 \Log::error('Google Places Error: ' . $e->getMessage());
+                $lastErrorMessage = $e->getMessage();
             }
         }
 
@@ -246,8 +263,35 @@ class NearbyVenuesController extends Controller
         return response()->json([
             'places' => $sortedPlaces,
             'total_results' => count($sortedPlaces),
-            'provider' => 'google'
+            'provider' => 'google',
+            'status' => $lastStatus,
+            'error_message' => $lastErrorMessage,
         ]);
+    }
+
+    private function shouldFallbackToOsm(array $payload): bool
+    {
+        $total = (int) ($payload['total_results'] ?? 0);
+        if ($total > 0) {
+            return false;
+        }
+
+        $status = strtoupper((string) ($payload['status'] ?? ''));
+        $errorMessage = (string) ($payload['error_message'] ?? '');
+
+        if ($this->isBillingDisabled($errorMessage)) {
+            return true;
+        }
+
+        if (in_array($status, ['REQUEST_DENIED', 'OVER_QUERY_LIMIT', 'INVALID_REQUEST'], true)) {
+            return true;
+        }
+
+        if ($status === 'ZERO_RESULTS') {
+            return true;
+        }
+
+        return $errorMessage !== '';
     }
 
     private function getOSMTagConfigs($category)

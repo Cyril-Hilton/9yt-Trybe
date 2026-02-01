@@ -15,9 +15,21 @@
                 <p class="text-gray-600 dark:text-gray-400">
                     Found <span class="font-semibold text-cyan-600 dark:text-cyan-400">{{ $totalResults }}</span> results for "<span class="font-semibold">{{ $query }}</span>"
                 </p>
+                @if(!empty($aiSearch) && !empty($aiSearch['corrected_query']) && $aiSearch['corrected_query'] !== $query)
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                        Showing results for <span class="font-semibold text-cyan-600 dark:text-cyan-400">{{ $aiSearch['corrected_query'] }}</span>
+                        <span class="mx-2">•</span>
+                        <a href="{{ route('search', ['q' => $query]) }}" class="text-cyan-600 dark:text-cyan-400 hover:underline">Search instead for "{{ $query }}"</a>
+                    </p>
+                @endif
+                @if(!empty($aiSearch) && !empty($aiSearch['intents']))
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        AI intent: {{ implode(', ', $aiSearch['intents']) }}
+                    </p>
+                @endif
             @else
                 <p class="text-gray-600 dark:text-gray-400">
-                    Search across events, organizers, polls, contestants, categories, products and more
+                    Search across events, organizers, blogs, polls, contestants, categories, products and more
                 </p>
             @endif
         </div>
@@ -120,6 +132,13 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                         Products ({{ $products->count() }})
                     </a>
+                    @if(isset($blogs))
+                    <a href="{{ route('search', ['q' => $query, 'type' => 'blogs']) }}"
+                       class="px-4 py-2 rounded-xl text-sm font-medium {{ $type === 'blogs' ? 'bg-cyan-600 text-white' : 'glass-card text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50' }} transition-all whitespace-nowrap flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-4H5m14 8H5m14 4H5"/></svg>
+                        Blogs ({{ $blogs->count() }})
+                    </a>
+                    @endif
                     @if(isset($surveys))
                     <a href="{{ route('search', ['q' => $query, 'type' => 'surveys']) }}"
                        class="px-4 py-2 rounded-xl text-sm font-medium {{ $type === 'surveys' ? 'bg-cyan-600 text-white' : 'glass-card text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50' }} transition-all whitespace-nowrap flex items-center gap-1">
@@ -154,7 +173,7 @@
                             <a href="{{ route('events.show', $event->slug) }}" class="group">
                                 <div class="glass-card rounded-2xl overflow-hidden hover-lift transition-all duration-300">
                                     @if($event->banner_image)
-                                        <img src="{{ asset('storage/' . $event->banner_image) }}" alt="{{ $event->title }}" class="w-full h-48 object-cover">
+                                        <img src="{{ $event->banner_url }}" alt="{{ $event->title }}" class="w-full h-48 object-cover">
                                     @else
                                         <div class="w-full h-48 bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center">
                                             <svg class="w-16 h-16 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,7 +231,7 @@
                             <a href="{{ url('/polls/' . $poll->slug) }}" class="group">
                                 <div class="glass-card rounded-2xl overflow-hidden hover-lift transition-all duration-300">
                                     @if($poll->banner_image)
-                                        <img src="{{ asset('storage/' . $poll->banner_image) }}" alt="{{ $poll->title }}" class="w-full h-40 object-cover">
+                                        <img src="{{ $poll->banner_url }}" alt="{{ $poll->title }}" class="w-full h-40 object-cover">
                                     @else
                                         <div class="w-full h-40 bg-gradient-to-br from-purple-400 to-pink-600 flex items-center justify-center">
                                             <svg class="w-12 h-12 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -417,6 +436,50 @@
                                     <p class="text-xs text-orange-600 mt-1">{{ $speaker->role }}</p>
                                 @endif
                             </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            <!-- Blog Results -->
+            @if(isset($blogs) && $blogs->count() > 0 && ($type === 'all' || $type === 'blogs'))
+                <div class="mb-12">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                        <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-4H5m14 8H5m14 4H5"/>
+                        </svg>
+                        Blog Posts
+                        <span class="text-sm font-normal text-gray-500">({{ $blogs->count() }} found)</span>
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        @foreach($blogs as $article)
+                            <a href="{{ route('blog.show', $article->slug) }}" class="group">
+                                <div class="glass-card rounded-2xl overflow-hidden hover-lift transition-all duration-300 h-full">
+                                    @if($article->image_url)
+                                        <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="w-full h-44 object-cover">
+                                    @else
+                                        <div class="w-full h-44 bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center">
+                                            <svg class="w-16 h-16 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-4H5m14 8H5m14 4H5"/>
+                                            </svg>
+                                        </div>
+                                    @endif
+                                    <div class="p-5">
+                                        <p class="text-xs uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 font-semibold">
+                                            {{ $article->category ?: 'Blog' }}
+                                        </p>
+                                        <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                                            {{ $article->title }}
+                                        </h3>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                                            {{ $article->description }}
+                                        </p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-500 mt-3">
+                                            {{ $article->published_at ? $article->published_at->format('M d, Y') : '' }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </a>
                         @endforeach
                     </div>
                 </div>

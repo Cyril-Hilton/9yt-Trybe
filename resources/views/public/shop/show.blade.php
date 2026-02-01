@@ -1,6 +1,65 @@
 @extends('layouts.app')
 
-@section('title', $product->name . ' - Shop - 9yt !Trybe')
+@php
+    $metaTitle = $metaOverrides['meta_title'] ?? ($product->meta_title ?: ($product->name . ' - Shop'));
+    $metaDescription = $metaOverrides['meta_description'] ?? ($product->meta_description ?: Str::limit(strip_tags($product->description ?? ''), 155));
+    $metaKeywords = !empty($product->ai_tags) ? implode(', ', $product->ai_tags) : $product->name . ', shop, 9yt !Trybe';
+    $shareImage = $product->image_url ?: asset('ui/logo/9yt-trybe-logo-light.png');
+@endphp
+
+@section('title', $metaTitle . ' | 9yt !Trybe')
+@section('meta_title', $metaTitle)
+@section('meta_description', $metaDescription)
+@section('meta_keywords', $metaKeywords)
+@section('og_title', $metaTitle)
+@section('og_description', $metaDescription)
+@section('og_image', $shareImage)
+@section('twitter_title', $metaTitle)
+@section('twitter_description', $metaDescription)
+@section('twitter_image', $shareImage)
+
+@push('head')
+@php
+    $productSchema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'Product',
+        'name' => $product->name,
+        'description' => strip_tags((string) $product->description),
+        'image' => [$shareImage],
+        'offers' => [
+            '@type' => 'Offer',
+            'price' => $product->price,
+            'priceCurrency' => 'GHS',
+            'availability' => $product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            'url' => url('/shop/' . $product->slug),
+        ],
+    ];
+
+    $faqItems = [];
+    if (!empty($product->ai_faqs)) {
+        foreach ($product->ai_faqs as $faq) {
+            if (!empty($faq['question']) && !empty($faq['answer'])) {
+                $faqItems[] = [
+                    '@type' => 'Question',
+                    'name' => $faq['question'],
+                    'acceptedAnswer' => [
+                        '@type' => 'Answer',
+                        'text' => $faq['answer'],
+                    ],
+                ];
+            }
+        }
+    }
+@endphp
+<script type="application/ld+json">
+{!! json_encode($productSchema, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}
+</script>
+@if(!empty($faqItems))
+    <script type="application/ld+json">
+    {!! json_encode(['@context' => 'https://schema.org', '@type' => 'FAQPage', 'mainEntity' => $faqItems], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}
+    </script>
+@endif
+@endpush
 
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-pink-50 dark:from-gray-900 dark:via-slate-900/20 dark:to-slate-800/20 py-12">
@@ -116,6 +175,20 @@
                 </div>
             </div>
         </div>
+
+        @if(!empty($product->ai_faqs))
+            <div class="mt-10 bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Product FAQs</h2>
+                <div class="space-y-4">
+                    @foreach($product->ai_faqs as $faq)
+                        <div class="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-0">
+                            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">{{ $faq['question'] ?? '' }}</h3>
+                            <p class="text-gray-600 dark:text-gray-400">{{ $faq['answer'] ?? '' }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
 
         <!-- Related Products Section -->
         @if($relatedProducts && $relatedProducts->count() > 0)

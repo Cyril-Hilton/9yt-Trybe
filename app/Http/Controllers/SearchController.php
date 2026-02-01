@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\Category;
 use App\Models\ShopProduct;
 use App\Models\Poll;
+use App\Models\Article;
 use App\Models\Contestant;
 use App\Models\TeamMember;
 use App\Models\Survey;
@@ -15,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use App\Services\Search\AiSearchService;
 
 class SearchController extends Controller
 {
@@ -38,32 +40,37 @@ class SearchController extends Controller
                 'speakers' => collect(),
                 'surveys' => collect(),
                 'conferences' => collect(),
+                'blogs' => collect(),
                 'totalResults' => 0,
                 'type' => $type,
                 'suggestions' => [],
+                'aiSearch' => null,
+                'searchQuery' => '',
             ]);
         }
 
+        $aiSearch = app(AiSearchService::class)->rewrite($query);
+        $searchQuery = $aiSearch['corrected_query'] ?? $query;
+        $terms = $this->buildSearchTerms($searchQuery, $aiSearch['synonyms'] ?? []);
+
         // Normalize query for better matching
-        $normalizedQuery = $this->normalizeQuery($query);
-        $searchTerms = $this->getSearchTerms($query);
+        $normalizedQuery = $this->normalizeQuery($searchQuery);
+        $searchTerms = $this->getSearchTerms($searchQuery);
 
         // Search Events - comprehensive fuzzy search across all relevant fields
         $events = collect();
-        $fuzzyVariations = $this->getFuzzyVariations($query);
+        $fuzzyVariations = $this->getFuzzyVariations($searchQuery);
 
         if ($type === 'all' || $type === 'events') {
             $events = Event::where('status', 'approved')
-                ->where(function ($q) use ($query) {
-                    $q->where('title', 'LIKE', "%{$query}%")
-                      ->orWhere('summary', 'LIKE', "%{$query}%")
-                      ->orWhere('venue_name', 'LIKE', "%{$query}%")
-                      ->orWhereHas('categories', function ($cq) use ($query) {
-                          $cq->where('name', 'LIKE', "%{$query}%");
-                      })
-                      ->orWhereHas('company', function ($cq) use ($query) {
-                          $cq->where('name', 'LIKE', "%{$query}%");
-                      });
+                ->where(function ($q) use ($terms) {
+                    $this->applyTermSearch($q, ['title', 'summary', 'venue_name'], $terms);
+                    $q->orWhereHas('categories', function ($cq) use ($terms) {
+                        $this->applyTermSearch($cq, ['name', 'slug', 'description'], $terms);
+                    });
+                    $q->orWhereHas('company', function ($cq) use ($terms) {
+                        $this->applyTermSearch($cq, ['name', 'description'], $terms);
+                    });
                 })
                 ->with(['company:id,name', 'categories:id,name,slug'])
                 ->latest('start_date')
@@ -80,9 +87,8 @@ class SearchController extends Controller
                 })
                 ->whereNotNull('slug')
                 ->where('slug', '!=', '')
-                ->where(function ($q) use ($query) {
-                    $q->where('name', 'LIKE', "%{$query}%")
-                      ->orWhere('description', 'LIKE', "%{$query}%");
+                ->where(function ($q) use ($terms) {
+                    $this->applyTermSearch($q, ['name', 'description'], $terms);
                 })
                 ->withCount([
                     'events as events_count' => function ($q) {
@@ -98,10 +104,8 @@ class SearchController extends Controller
         $categories = collect();
         if ($type === 'all' || $type === 'categories') {
             $categories = Category::where('is_active', true)
-                ->where(function ($q) use ($query) {
-                    $q->where('name', 'LIKE', "%{$query}%")
-                        ->orWhere('description', 'LIKE', "%{$query}%")
-                        ->orWhere('slug', 'LIKE', "%{$query}%");
+                ->where(function ($q) use ($terms) {
+                    $this->applyTermSearch($q, ['name', 'description', 'slug'], $terms);
                 })
                 ->withCount('events')
                 ->orderBy('order')
@@ -114,10 +118,8 @@ class SearchController extends Controller
         if ($type === 'all' || $type === 'products') {
             $products = ShopProduct::where('status', 'approved')
                 ->where('is_active', true)
-                ->where(function ($q) use ($query) {
-                    $q->where('name', 'LIKE', "%{$query}%")
-                      ->orWhere('description', 'LIKE', "%{$query}%")
-                      ->orWhere('slug', 'LIKE', "%{$query}%");
+                ->where(function ($q) use ($terms) {
+                    $this->applyTermSearch($q, ['name', 'description', 'slug', 'category', 'color', 'size'], $terms);
                 })
                 ->latest()
                 ->take($type === 'all' ? 8 : 16)
@@ -128,10 +130,8 @@ class SearchController extends Controller
         $polls = collect();
         if ($type === 'all' || $type === 'polls') {
             $polls = Poll::where('status', 'active')
-                ->where(function ($q) use ($query) {
-                    $q->where('title', 'LIKE', "%{$query}%")
-                      ->orWhere('description', 'LIKE', "%{$query}%")
-                      ->orWhere('slug', 'LIKE', "%{$query}%");
+                ->where(function ($q) use ($terms) {
+                    $this->applyTermSearch($q, ['title', 'description', 'slug'], $terms);
                 })
                 ->with('company:id,name')
                 ->withCount('contestants')
@@ -145,9 +145,8 @@ class SearchController extends Controller
         if ($type === 'all' || $type === 'contestants') {
             try {
                 $contestants = Contestant::where('status', 'active')
-                    ->where(function ($q) use ($query) {
-                        $q->where('name', 'LIKE', "%{$query}%")
-                          ->orWhere('bio', 'LIKE', "%{$query}%");
+                    ->where(function ($q) use ($terms) {
+                        $this->applyTermSearch($q, ['name', 'bio'], $terms);
                     })
                     ->whereHas('poll', function ($q) {
                         $q->where('status', 'active');
@@ -165,11 +164,8 @@ class SearchController extends Controller
         $speakers = collect();
         if ($type === 'all' || $type === 'speakers') {
             $speakers = TeamMember::where('status', 'approved')
-                ->where(function ($q) use ($query) {
-                    $q->where('full_name', 'LIKE', "%{$query}%")
-                      ->orWhere('title', 'LIKE', "%{$query}%")
-                      ->orWhere('role', 'LIKE', "%{$query}%")
-                      ->orWhere('job_description', 'LIKE', "%{$query}%");
+                ->where(function ($q) use ($terms) {
+                    $this->applyTermSearch($q, ['full_name', 'title', 'role', 'job_description'], $terms);
                 })
                 ->take($type === 'all' ? 6 : 12)
                 ->get();
@@ -179,10 +175,8 @@ class SearchController extends Controller
         $surveys = collect();
         if ($type === 'all' || $type === 'surveys') {
             $surveys = Survey::where('status', 'active')
-                ->where(function ($q) use ($query) {
-                    $q->where('title', 'LIKE', "%{$query}%")
-                      ->orWhere('description', 'LIKE', "%{$query}%")
-                      ->orWhere('slug', 'LIKE', "%{$query}%");
+                ->where(function ($q) use ($terms) {
+                    $this->applyTermSearch($q, ['title', 'description', 'slug'], $terms);
                 })
                 ->with('company:id,name')
                 ->latest()
@@ -194,11 +188,8 @@ class SearchController extends Controller
         $conferences = collect();
         if ($type === 'all' || $type === 'conferences') {
             $conferences = Conference::where('status', 'active')
-                ->where(function ($q) use ($query) {
-                    $q->where('title', 'LIKE', "%{$query}%")
-                      ->orWhere('description', 'LIKE', "%{$query}%")
-                      ->orWhere('venue', 'LIKE', "%{$query}%")
-                      ->orWhere('slug', 'LIKE', "%{$query}%");
+                ->where(function ($q) use ($terms) {
+                    $this->applyTermSearch($q, ['title', 'description', 'venue', 'slug'], $terms);
                 })
                 ->with('company:id,name')
                 ->withCount('registrations')
@@ -207,9 +198,22 @@ class SearchController extends Controller
                 ->get();
         }
 
+        // Search Blog Articles
+        $blogs = collect();
+        if ($type === 'all' || $type === 'blogs') {
+            $blogs = Article::where('type', 'blog')
+                ->where('is_published', true)
+                ->where(function ($q) use ($terms) {
+                    $this->applyTermSearch($q, ['title', 'description', 'content', 'category'], $terms);
+                })
+                ->latest('published_at')
+                ->take($type === 'all' ? 6 : 12)
+                ->get();
+        }
+
         $totalResults = $events->count() + $companies->count() + $categories->count()
             + $products->count() + $polls->count() + $contestants->count() + $speakers->count()
-            + $surveys->count() + $conferences->count();
+            + $surveys->count() + $conferences->count() + $blogs->count();
 
         // Generate suggestions if no results found
         $suggestions = [];
@@ -229,6 +233,7 @@ class SearchController extends Controller
                 'speakers' => $speakers,
                 'surveys' => $surveys,
                 'conferences' => $conferences,
+                'blogs' => $blogs,
                 'totalResults' => $totalResults,
                 'suggestions' => $suggestions,
             ]);
@@ -236,6 +241,8 @@ class SearchController extends Controller
 
         return view('search.results', [
             'query' => $query,
+            'searchQuery' => $searchQuery,
+            'aiSearch' => $aiSearch,
             'events' => $events,
             'companies' => $companies,
             'categories' => $categories,
@@ -245,6 +252,7 @@ class SearchController extends Controller
             'speakers' => $speakers,
             'surveys' => $surveys,
             'conferences' => $conferences,
+            'blogs' => $blogs,
             'totalResults' => $totalResults,
             'type' => $type,
             'suggestions' => $suggestions,
@@ -330,7 +338,7 @@ class SearchController extends Controller
                         'title' => $event->title,
                         'subtitle' => $event->company->name ?? $event->venue_name ?? '',
                         'url' => route('events.show', $event->slug),
-                        'image' => $event->banner_image ? asset('storage/' . $event->banner_image) : null,
+                    'image' => $event->banner_image ? $event->banner_url : null,
                         'date' => $event->start_date ? $event->start_date->format('M d, Y') : null,
                     ];
                 });
@@ -416,7 +424,7 @@ class SearchController extends Controller
                             'title' => $poll->title,
                             'subtitle' => number_format($poll->total_votes) . ' votes',
                             'url' => url('/polls/' . $poll->slug),
-                            'image' => $poll->banner_image ? asset('storage/' . $poll->banner_image) : null,
+                        'image' => $poll->banner_image ? $poll->banner_url : null,
                         ];
                     });
                 $suggestions = $suggestions->concat($polls);
@@ -481,6 +489,33 @@ class SearchController extends Controller
             $suggestions = $suggestions->concat($products);
         } catch (\Exception $e) {
             // Skip products on error
+        }
+
+        // Get blog posts
+        try {
+            $blogs = Article::where('type', 'blog')
+                ->where('is_published', true)
+                ->where(function ($q) use ($likeAny) {
+                    $q->where('title', 'LIKE', $likeAny)
+                      ->orWhere('description', 'LIKE', $likeAny);
+                })
+                ->select('id', 'title', 'slug', 'published_at')
+                ->take($secondaryTake)
+                ->get()
+                ->map(function ($article) {
+                    return [
+                        'type' => 'blog',
+                        'icon' => 'document-text',
+                        'id' => $article->id,
+                        'title' => $article->title,
+                        'subtitle' => 'Blog post',
+                        'url' => route('blog.show', $article->slug),
+                        'image' => null,
+                    ];
+                });
+            $suggestions = $suggestions->concat($blogs);
+        } catch (\Exception $e) {
+            // Skip blogs on error
         }
 
         // Get surveys
@@ -588,6 +623,46 @@ class SearchController extends Controller
     {
         $terms = explode(' ', $query);
         return array_filter($terms, fn($term) => strlen(trim($term)) >= 2);
+    }
+
+    /**
+     * Build expanded search terms (query + synonyms + fuzzy)
+     */
+    private function buildSearchTerms(string $query, array $synonyms = []): array
+    {
+        $terms = array_merge(
+            [$query],
+            $this->getSearchTerms($query),
+            $synonyms,
+            $this->getFuzzyVariations($query)
+        );
+
+        $terms = array_values(array_filter(array_map(function ($term) {
+            $term = trim((string) $term);
+            return strlen($term) >= 2 ? $term : null;
+        }, $terms)));
+
+        $terms = array_values(array_unique($terms));
+
+        return array_slice($terms, 0, 14);
+    }
+
+    private function applyTermSearch($query, array $columns, array $terms): void
+    {
+        if (empty($terms)) {
+            return;
+        }
+
+        $query->where(function ($q) use ($columns, $terms) {
+            foreach ($terms as $term) {
+                $like = '%' . $term . '%';
+                $q->orWhere(function ($sub) use ($columns, $like) {
+                    foreach ($columns as $column) {
+                        $sub->orWhere($column, 'LIKE', $like);
+                    }
+                });
+            }
+        });
     }
 
     /**

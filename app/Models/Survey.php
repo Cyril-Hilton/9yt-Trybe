@@ -15,6 +15,8 @@ class Survey extends Model
         'company_id',
         'title',
         'description',
+        'meta_title',
+        'meta_description',
         'slug',
         'status',
         'allow_anonymous',

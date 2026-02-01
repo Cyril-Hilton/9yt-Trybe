@@ -20,6 +20,10 @@ class Company extends Authenticatable
         'logo',
         'website',
         'description',
+        'meta_title',
+        'meta_description',
+        'ai_tags',
+        'ai_faqs',
         'is_suspended',
         'suspension_reason',
         'suspended_at',
@@ -43,6 +47,8 @@ class Company extends Authenticatable
             'is_suspended' => 'boolean',
             'suspended_at' => 'datetime',
             'otp_expires_at' => 'datetime',
+            'ai_tags' => 'array',
+            'ai_faqs' => 'array',
         ];
     }
 

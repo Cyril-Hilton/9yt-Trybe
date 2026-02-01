@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Services\SEO\AiTranslationService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class OrganizerController extends Controller
 {
@@ -26,7 +29,7 @@ class OrganizerController extends Controller
         return view('public.organizers.index', compact('organizers'));
     }
 
-    public function show(string $slug)
+    public function show(Request $request, string $slug)
     {
         $organizer = Company::where('slug', $slug)
             ->where(function ($q) {
@@ -51,12 +54,22 @@ class OrganizerController extends Controller
         $approvedEventsCount = $organizer->events()->approved()->count();
         $followersCount = $organizer->followers()->count();
 
+        $metaOverrides = null;
+        $translator = app(AiTranslationService::class);
+        $lang = $translator->resolveLanguage($request->query('lang'));
+        if ($lang !== 'en') {
+            $baseTitle = $organizer->meta_title ?: ($organizer->name . ' - Organizer');
+            $baseDescription = $organizer->meta_description ?: ($organizer->description ? Str::limit($organizer->description, 150) : 'Organizer profile and events on 9yt !Trybe.');
+            $metaOverrides = $translator->translateMeta($baseTitle, $baseDescription, $lang);
+        }
+
         return view('public.organizers.show', compact(
             'organizer',
             'upcomingEvents',
             'pastEvents',
             'approvedEventsCount',
-            'followersCount'
+            'followersCount',
+            'metaOverrides'
         ));
     }
 }

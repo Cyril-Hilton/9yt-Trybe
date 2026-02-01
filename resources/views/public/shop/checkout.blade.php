@@ -191,14 +191,23 @@
 
 @section('scripts')
 <script>
-const provider = "{{ config('services.maps.provider', 'osm') }}";
+let mapsProvider = "{{ config('services.maps.provider', 'osm') }}";
+
+function setMapsProvider(nextProvider) {
+    mapsProvider = nextProvider;
+    document.dispatchEvent(new CustomEvent('maps-provider-changed', { detail: nextProvider }));
+}
 
 function checkoutAddressAutocomplete() {
     return {
-        provider: provider,
+        provider: mapsProvider,
         query: "{{ old('shipping_address') }}",
         suggestions: [],
         init() {
+            this.provider = mapsProvider;
+            document.addEventListener('maps-provider-changed', (event) => {
+                this.provider = event.detail;
+            });
             if (this.provider === 'google') {
                 // Google initialization is handled in initAutocomplete
             }
@@ -240,7 +249,7 @@ function checkoutAddressAutocomplete() {
 let autocomplete;
 
 function initAutocomplete() {
-    if (provider !== 'google') return;
+    if (mapsProvider !== 'google') return;
     
     const addressInput = document.getElementById('shipping_address');
     const cityInput = document.getElementById('city');
@@ -285,13 +294,18 @@ function initAutocomplete() {
 
 // Load appropriate API
 (function() {
-    if (provider === 'google') {
+    if (mapsProvider === 'google') {
         const apiKey = '{{ config('services.google.maps_api_key') }}';
         if (apiKey) {
             const script = document.createElement('script');
             script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initAutocomplete`;
             script.async = true; script.defer = true;
+            script.onerror = () => {
+                setMapsProvider('osm');
+            };
             document.head.appendChild(script);
+        } else {
+            setMapsProvider('osm');
         }
     } else {
         // No heavy JS API to load for OSM, Alpine handles it

@@ -8,13 +8,17 @@ use App\Models\Event;
 use App\Models\EventLike;
 use App\Models\EventView;
 use App\Models\OrganizationFollower;
+use App\Services\AI\AiContentService;
 use App\Services\News\NewsService;
+use App\Services\SEO\AiLandingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use App\Services\SEO\AiTranslationService;
 
 class EventController extends Controller
 {
-    public function home(Request $request, NewsService $newsService)
+    public function home(Request $request, NewsService $newsService, AiContentService $aiContent)
     {
         $query = Event::approved()->with('company');
 
@@ -67,8 +71,9 @@ class EventController extends Controller
         ];
 
         $newsArticles = $newsService->getArticles();
+        $newsDigest = $aiContent->generateNewsDigest($newsArticles, null);
 
-        return view('welcome', compact('events', 'regions', 'newsArticles'));
+        return view('welcome', compact('events', 'regions', 'newsArticles', 'newsDigest'));
     }
 
     public function index(Request $request)
@@ -170,13 +175,49 @@ class EventController extends Controller
         // Get all event categories for filter
         $categories = \App\Models\Category::active()->get();
 
+        $categoryIntro = null;
+        $categoryMeta = null;
+        if ($category && !$invalidCategory) {
+            $landing = app(AiLandingService::class)
+                ->generateCategoryLanding($category->name, $events->pluck('title')->take(8)->all());
+
+            $fallbackTitle = $category->meta_title ?: ($category->name . ' Events | 9yt !Trybe');
+            $fallbackDescription = $category->meta_description
+                ?: 'Browse upcoming ' . $category->name . ' events, tickets, and experiences on 9yt !Trybe.';
+
+            $categoryMeta = [
+                'headline' => $landing['headline'] ?? ($category->name . ' Events'),
+                'intro' => $landing['intro'] ?? '',
+                'meta_title' => $landing['meta_title'] ?? $fallbackTitle,
+                'meta_description' => $landing['meta_description'] ?? $fallbackDescription,
+            ];
+
+            $translator = app(AiTranslationService::class);
+            $lang = $translator->resolveLanguage($request->query('lang'));
+            if ($lang !== 'en') {
+                $translated = $translator->translateMeta(
+                    $categoryMeta['meta_title'],
+                    $categoryMeta['meta_description'],
+                    $lang
+                );
+                $categoryMeta['meta_title'] = $translated['meta_title'];
+                $categoryMeta['meta_description'] = $translated['meta_description'];
+                $categoryMeta['intro'] = $translator->translateText($categoryMeta['intro'], $lang);
+                $categoryMeta['headline'] = $translator->translateText($categoryMeta['headline'], $lang);
+            }
+
+            $categoryIntro = $categoryMeta['intro'];
+        }
+
         return view('public.events.index', compact(
             'events',
             'trendingEvents',
             'upcomingEventDates',
             'categories',
             'category',
-            'invalidCategory'
+            'invalidCategory',
+            'categoryIntro',
+            'categoryMeta'
         ));
     }
 
@@ -187,7 +228,7 @@ class EventController extends Controller
         return $this->index($request);
     }
 
-    public function show(string $slug)
+    public function show(Request $request, string $slug)
     {
         $event = Event::where('slug', $slug)
             ->approved()
@@ -254,6 +295,15 @@ class EventController extends Controller
             ->limit(3)
             ->get();
 
+        $metaOverrides = null;
+        $translator = app(AiTranslationService::class);
+        $lang = $translator->resolveLanguage($request->query('lang'));
+        if ($lang !== 'en') {
+            $baseTitle = $event->meta_title ?: ($event->title . ' - Book Tickets');
+            $baseDescription = $event->meta_description ?: Str::limit(strip_tags($event->summary ?? $event->overview ?? ('Book tickets for ' . $event->title)), 155);
+            $metaOverrides = $translator->translateMeta($baseTitle, $baseDescription, $lang);
+        }
+
         return view('public.events.show', compact(
             'event',
             'userLiked',
@@ -265,7 +315,8 @@ class EventController extends Controller
             'recentPurchases',
             'isPopular',
             'isTrending',
-            'isAlmostSoldOut'
+            'isAlmostSoldOut',
+            'metaOverrides'
         ));
     }
 

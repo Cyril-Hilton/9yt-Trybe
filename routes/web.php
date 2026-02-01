@@ -25,6 +25,9 @@ use App\Http\Controllers\Company\SmsContactController;
 use App\Http\Controllers\Company\SmsSenderIdController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\Auth\SocialAuthController;
+use App\Http\Controllers\Company\AiAssistController;
+use App\Http\Controllers\Public\BlogController;
+use App\Http\Controllers\Public\SeoLandingController;
 
 // OAuth Social Login Routes (Google, Microsoft/Outlook, Yahoo)
 Route::prefix('auth')->name('auth.social.')->group(function () {
@@ -51,6 +54,17 @@ Route::get('/search/quick', [App\Http\Controllers\SearchController::class, 'quic
 // News (Fashion, Lifestyle, Entertainment)
 Route::get('/news', [App\Http\Controllers\Public\NewsController::class, 'index'])->name('news.index');
 Route::get('/api/news', [App\Http\Controllers\Public\NewsController::class, 'index'])->name('api.news.index');
+
+// Blog (How-tos, What's on)
+Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
+Route::get('/blog/rss.xml', [BlogController::class, 'rss'])->name('blog.rss');
+Route::get('/rss.xml', [BlogController::class, 'rss'])->name('rss');
+
+// Programmatic SEO landings
+Route::get('/today', [SeoLandingController::class, 'today'])->name('seo.today');
+Route::get('/this-weekend', [SeoLandingController::class, 'weekend'])->name('seo.weekend');
+Route::get('/locations/{region}', [SeoLandingController::class, 'region'])->name('seo.region');
 
 // Chat Routes (Available for all users - guest, authenticated, company)
 Route::post('/chat/send', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.send');
@@ -740,6 +754,12 @@ Route::prefix('organization')->name('organization.')->group(function () {
         Route::post('/logout', [CompanyAuthController::class, 'logout'])
             ->name('logout');
 
+        // AI Assist (Events, SMS)
+        Route::post('/ai/event-copy', [AiAssistController::class, 'generateEventCopy'])
+            ->name('ai.event-copy');
+        Route::post('/ai/sms-draft', [AiAssistController::class, 'generateSmsDraft'])
+            ->name('ai.sms-draft');
+
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('dashboard');
 
@@ -1005,3 +1025,11 @@ Route::prefix('staff')->name('staff.')->group(function () {
 Route::prefix('api/staff')->middleware('auth:staff')->group(function () {
     Route::post('/verify-ticket', [App\Http\Controllers\TicketVerificationController::class, 'verify']);
 });
+
+// IndexNow key verification (optional)
+if (config('services.indexnow.key')) {
+    Route::get('/' . config('services.indexnow.key') . '.txt', function () {
+        return response(config('services.indexnow.key'))
+            ->header('Content-Type', 'text/plain');
+    });
+}
