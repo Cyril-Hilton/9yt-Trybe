@@ -1173,6 +1173,23 @@ php artisan about
 
 ---
 
+## Automation, AI & SEO Workflow
+
+### Scheduled Tasks
+- A Windows task named `9ytTrybeSchedule` now calls `run-schedule.bat` every minute so `php artisan schedule:run` executes the hourly/daily commands defined in `routes/console.php` (news cache refresh, scheduled SMS, AI SEO/blog/enrichment/digest jobs, etc.). Keep `run-schedule.bat` at the repo root and verify the job with `schtasks /Query /TN 9ytTrybeSchedule`.
+- Check `storage/logs/laravel.log` after each run for warnings; our local attempts to run `php artisan seo:refresh --only-missing --limit=80 --days=90` and `php artisan ai:enrich-content --only-missing --limit=40` timed out, so let the scheduler run them with enough time or execute them via an SSH/PowerShell session that can stay alive for longer than five minutes.
+
+### IndexNow & Sitemap Submission
+- The IndexNow key file now lives at `public/indexnow.txt`; keep `INDEXNOW_KEY_LOCATION=https://yourdomain.com/indexnow.txt` and `INDEXNOW_HOST` aligned with `APP_URL` inside `.env`/`.env.example`. Observers submit URLs automatically when events/polls/articles are approved.
+- Keep the sitemap current (`php artisan sitemap:generate` or your own script) and submit it through Google Search Console and Bing Webmaster Tools; `app/Services/SEO/IndexNowService` simultaneously posts the URL list, so monitor `laravel.log` for success/failure entries.
+
+### Manual AI/SEO Checks
+- `php artisan blog:generate-ai --auto-publish` writes the daily how-to/what's-on posts defined by `AI_BLOG_HOW_TO_TOPICS` and `AI_BLOG_WHATS_ON_REGIONS`. Run it before a marketing push when you need extra content.
+- `php artisan ai:growth-digest`, `ai:growth-organizer-tips`, and `ai:growth-social-snippets` create weekly digests, organizer tips, and social snippets—trigger them manually if immediate deliverables are required.
+- After the AI jobs run, rerun the SEO refresh and enrichment commands so event/organizer/product tags, FAQs, and metadata stay fresh.
+
+---
+
 **Guide Version:** 1.0
 **Last Updated:** December 21, 2025
 **For Questions:** 9yttrybe@gmail.com

@@ -564,6 +564,12 @@ Or cron job (shared hosting):
 - **Uptime:** UptimeRobot, Pingdom
 - **Logs:** Papertrail, Logtail
 
+### Automation & SEO Ops
+
+- A scheduled Windows task named `9ytTrybeSchedule` now runs `run-schedule.bat` (which calls `php artisan schedule:run`) every minute so all cron jobs from `routes/console.php` execute reliably; check it with `schtasks /Query /TN 9ytTrybeSchedule`.
+- Long-running commands like `php artisan seo:refresh --only-missing --limit=80 --days=90` and `php artisan ai:enrich-content --only-missing --limit=40` often exceed the 5-minute CLI timeout; rerun them on a stable shell (or via screen/tmux) during off-hours, then let the scheduler take over day-to-day.
+- The IndexNow key file is exposed at `public/indexnow.txt`, `.env` now points `INDEXNOW_KEY_LOCATION` to `https://yourdomain.com/indexnow.txt`, and `IndexNowService` observers submit approved URLs automatically. Monitor `storage/logs/laravel.log` for `IndexNow submission failed` warnings and resubmit the sitemap via Google Search Console/Bing Webmaster Tools if needed.
+
 ### Support & Maintenance
 
 **Admin Contact:**
