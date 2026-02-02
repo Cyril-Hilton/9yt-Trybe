@@ -203,6 +203,8 @@ class AIClient
             \Log::warning('Gemini response failed.', [
                 'status' => $response->status(),
                 'provider' => 'gemini',
+                'model' => $model,
+                'endpoint_mask' => Str::before($endpoint, '?'),
             ]);
             return null;
         }
