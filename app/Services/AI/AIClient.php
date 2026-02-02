@@ -164,6 +164,9 @@ class AIClient
 
     private function callGemini(string $system, string $user, float $temperature, int $maxTokens, array $options): ?string
     {
+        // Add a small delay to prevent 429 Rate Limits during batch runs (Gemini Free Tier is 15 RPM)
+        usleep(2000000); // 2 seconds
+
         $apiKey = (string) config('services.gemini.api_key');
         if ($apiKey === '') {
             return null;
