@@ -1,5 +1,18 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteCond %{REQUEST_URI} !^/public/
+    
+    # 1. If the request is already for /public, don't touch it
+    RewriteCond %{REQUEST_URI} ^/public/
+    RewriteRule ^ - [L]
+
+    # 2. If the request matches a real file in the public folder, go there
+    RewriteCond %{DOCUMENT_ROOT}/public/$1 -f
     RewriteRule ^(.*)$ public/$1 [L]
+
+    # 3. If it matches a real folder in the public folder, go there
+    RewriteCond %{DOCUMENT_ROOT}/public/$1 -d
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # 4. Otherwise, handle everything through Laravel's index.php
+    RewriteRule ^(.*)$ public/index.php [L,QSA]
 </IfModule>
