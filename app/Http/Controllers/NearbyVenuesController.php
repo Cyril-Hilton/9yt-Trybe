@@ -118,7 +118,10 @@ class NearbyVenuesController extends Controller
                 }
                 $query .= ");\nout center;";
 
-                $response = Http::timeout(15)->asForm()->post($overpassUrl, ['data' => $query]);
+                $response = Http::timeout(15)
+                    ->when(app()->environment('local'), fn($h) => $h->withoutVerifying())
+                    ->asForm()
+                    ->post($overpassUrl, ['data' => $query]);
 
                 if ($response->failed()) {
                     continue; // Try next server
@@ -211,7 +214,8 @@ class NearbyVenuesController extends Controller
             if (isset($config['keyword'])) $query['keyword'] = $config['keyword'];
 
             try {
-                $response = Http::get($url, $query);
+                $response = Http::when(app()->environment('local'), fn($h) => $h->withoutVerifying())
+                    ->get($url, $query);
                 
                 if ($response->successful()) {
                     $payload = $response->json();
@@ -423,7 +427,9 @@ class NearbyVenuesController extends Controller
         $ipGeoKey = config('services.ip_geolocation.api_key');
 
         // Use ipgeolocation.io API
-        $response = Http::timeout(5)->get("https://api.ipgeolocation.io/ipgeo?apiKey={$ipGeoKey}&ip={$ip}");
+        $response = Http::timeout(5)
+            ->when(app()->environment('local'), fn($h) => $h->withoutVerifying())
+            ->get("https://api.ipgeolocation.io/ipgeo?apiKey={$ipGeoKey}&ip={$ip}");
 
         if ($response->successful()) {
             $data = $response->json();
@@ -558,6 +564,86 @@ class NearbyVenuesController extends Controller
                 'maps_url' => 'https://maps.google.com/?q=Sandbox+Beach+Club',
                 'photo_reference' => null,
                 'photo_url' => $this->getCategoryPlaceholderImage('club', 'sandbox'),
+            ],
+            [
+                'id' => 'fallback_9',
+                'name' => 'Bloom Bar',
+                'address' => 'Oxford Street, Osu, Accra',
+                'latitude' => 5.5583,
+                'longitude' => -0.1818,
+                'rating' => 4.6,
+                'user_ratings_total' => 1200,
+                'price_level' => 3,
+                'distance_km' => 0.5,
+                'is_open_now' => true,
+                'category' => 'club',
+                'maps_url' => 'https://maps.google.com/?q=Bloom+Bar+Accra',
+                'photo_reference' => null,
+                'photo_url' => $this->getCategoryPlaceholderImage('club', 'bloom'),
+            ],
+            [
+                'id' => 'fallback_10',
+                'name' => 'Front/Back',
+                'address' => 'Osu, Accra',
+                'latitude' => 5.5562,
+                'longitude' => -0.1834,
+                'rating' => 4.7,
+                'user_ratings_total' => 280,
+                'price_level' => 4,
+                'distance_km' => 0.6,
+                'is_open_now' => true,
+                'category' => 'club',
+                'maps_url' => 'https://maps.google.com/?q=Front+Back+Accra',
+                'photo_reference' => null,
+                'photo_url' => $this->getCategoryPlaceholderImage('club', 'frontback'),
+            ],
+            [
+                'id' => 'fallback_11',
+                'name' => 'Carbon Night Club',
+                'address' => 'Airport Residential Area, Accra',
+                'latitude' => 5.6015,
+                'longitude' => -0.1822,
+                'rating' => 4.4,
+                'user_ratings_total' => 150,
+                'price_level' => 5,
+                'distance_km' => 1.4,
+                'is_open_now' => true,
+                'category' => 'club',
+                'maps_url' => 'https://maps.google.com/?q=Carbon+Night+Club+Accra',
+                'photo_reference' => null,
+                'photo_url' => $this->getCategoryPlaceholderImage('club', 'carbon'),
+            ],
+            [
+                'id' => 'fallback_12',
+                'name' => 'Ace Tantra Night Club',
+                'address' => 'Oxford Street, Osu, Accra',
+                'latitude' => 5.5570,
+                'longitude' => -0.1820,
+                'rating' => 4.3,
+                'user_ratings_total' => 410,
+                'price_level' => 4,
+                'distance_km' => 0.4,
+                'is_open_now' => true,
+                'category' => 'club',
+                'maps_url' => 'https://maps.google.com/?q=Ace+Tantra+Accra',
+                'photo_reference' => null,
+                'photo_url' => $this->getCategoryPlaceholderImage('club', 'ace'),
+            ],
+            [
+                'id' => 'fallback_13',
+                'name' => 'The Alley',
+                'address' => 'North Labone, Accra',
+                'latitude' => 5.5720,
+                'longitude' => -0.1710,
+                'rating' => 4.5,
+                'user_ratings_total' => 180,
+                'price_level' => 3,
+                'distance_km' => 2.2,
+                'is_open_now' => true,
+                'category' => 'lounge',
+                'maps_url' => 'https://maps.google.com/?q=The+Alley+Accra',
+                'photo_reference' => null,
+                'photo_url' => $this->getCategoryPlaceholderImage('lounge', 'alley'),
             ],
             [
                 'id' => 'fallback_3',

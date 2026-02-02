@@ -64,8 +64,13 @@
 
             @if(empty($articles))
                 <div class="mt-12 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 p-10 text-center">
-                    <p class="text-gray-700 dark:text-gray-300">No articles yet. Add your API key and try again.</p>
-                    <p class="mt-2 text-sm text-gray-500">Set `NEWS_PROVIDER` and a matching API key in `.env`.</p>
+                    <div class="mx-auto w-16 h-16 text-gray-400 mb-4">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+                        </svg>
+                    </div>
+                    <p class="text-gray-700 dark:text-gray-300 font-medium">News is being updated.</p>
+                    <p class="mt-2 text-sm text-gray-500">Check back shortly for the latest fashion and lifestyle updates.</p>
                 </div>
             @else
                 <div class="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

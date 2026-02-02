@@ -83,7 +83,9 @@ class NewsService
         ];
 
         try {
-            $response = Http::timeout(5)->get($url, $params);
+            $response = Http::timeout(5)
+                ->when(app()->environment('local'), fn($h) => $h->withoutVerifying())
+                ->get($url, $params);
             
             if ($response->successful()) {
                 $articles = $response->json()['articles'] ?? [];
@@ -230,8 +232,9 @@ class NewsService
             }
 
             try {
-                // Reduced timeout per feed to 1.5 seconds
-                $response = Http::timeout(1.5)->get($feedUrl);
+                $response = Http::timeout(2)
+                    ->when(app()->environment('local'), fn($h) => $h->withoutVerifying())
+                    ->get($feedUrl);
                 if (!$response->ok()) {
                     continue;
                 }
@@ -356,7 +359,7 @@ class NewsService
 
     private function normalizeArticles(array $articles): array
     {
-        $maxAgeDays = (int) config('services.news.max_age_days', 21);
+        $maxAgeDays = (int) config('services.news.max_age_days', 60);
         $maxResults = (int) config('services.news.max_results', 20);
         $now = now();
 

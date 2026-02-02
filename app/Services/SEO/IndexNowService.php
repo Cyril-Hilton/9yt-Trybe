@@ -35,6 +35,7 @@ class IndexNowService
 
         try {
             $response = Http::timeout(8)
+                ->when(app()->environment('local'), fn($h) => $h->withoutVerifying())
                 ->retry(1, 200)
                 ->acceptJson()
                 ->post('https://api.indexnow.org/indexnow', $payload);

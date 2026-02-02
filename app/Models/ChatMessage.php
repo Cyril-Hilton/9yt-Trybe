@@ -111,7 +111,7 @@ class ChatMessage extends Model
     public static function notifyAdmin($chatMessage)
     {
         // Get admin email from config or env
-        $adminEmail = config('mail.admin_email', env('ADMIN_EMAIL', '9yttrybe@gmail.com'));
+        $adminEmail = config('mail.from.address', '9yttrybe@gmail.com');
 
         try {
             Mail::to($adminEmail)->send(new NewChatMessage($chatMessage));
