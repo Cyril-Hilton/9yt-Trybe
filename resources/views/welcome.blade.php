@@ -2324,7 +2324,7 @@
                     try {
                         const controller = new AbortController();
                         const timeoutId = setTimeout(() => controller.abort(), 20000);
-                        const response = await fetch(`/api/nearby-venues?lat=${this.userLat}&lng=${this.userLng}&category=${this.selectedCategory}`, {
+                        const response = await fetch(`${window.location.origin}/api/nearby-venues?lat=${this.userLat}&lng=${this.userLng}&category=${this.selectedCategory}`, {
                             signal: controller.signal
                         });
                         clearTimeout(timeoutId);
