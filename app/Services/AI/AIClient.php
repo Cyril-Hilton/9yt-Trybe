@@ -124,7 +124,7 @@ class AIClient
     private function callOpenAI(string $system, string $user, float $temperature, int $maxTokens, array $options): ?string
     {
         // Add a small delay to prevent 429 Rate Limits during batch runs
-        usleep(2000000); // 2 seconds
+        usleep(5000000); // 5 seconds
 
         $apiKey = (string) config('services.openai.api_key');
         if ($apiKey === '') {
@@ -167,8 +167,8 @@ class AIClient
 
     private function callGemini(string $system, string $user, float $temperature, int $maxTokens, array $options): ?string
     {
-        // Add a small delay to prevent 429 Rate Limits during batch runs (Gemini Free Tier is 15 RPM)
-        usleep(2000000); // 2 seconds
+        // Add a small delay to prevent 429 Rate Limits during batch runs (Gemini Free Tier is 15 RPM = 1 request every 4s)
+        usleep(5000000); // 5 seconds
 
         $apiKey = (string) config('services.gemini.api_key');
         if ($apiKey === '') {
