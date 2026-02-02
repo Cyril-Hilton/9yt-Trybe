@@ -144,7 +144,7 @@ class AIClient
 
         $response = Http::timeout(25)
             ->retry(1, 200)
-            ->when(app()->environment('local'), fn($h) => $h->withoutVerifying())
+            ->when(config('services.ai.insecure', app()->environment('local')), fn($h) => $h->withoutVerifying())
             ->withToken($apiKey)
             ->acceptJson()
             ->post($endpoint, $payload);
@@ -195,7 +195,7 @@ class AIClient
 
         $response = Http::timeout(25)
             ->retry(1, 200)
-            ->when(app()->environment('local'), fn($h) => $h->withoutVerifying())
+            ->when(config('services.ai.insecure', app()->environment('local')), fn($h) => $h->withoutVerifying())
             ->acceptJson()
             ->post($endpoint, $payload);
 

@@ -141,6 +141,7 @@ return [
         'model' => env('9YTTRYBE_AI_MODEL', 'gpt-4o-mini'),
         'review_threshold' => env('9YTTRYBE_AI_REVIEW_THRESHOLD', 0.45),
         'async' => env('9YTTRYBE_AI_ASYNC', false),
+        'insecure' => env('9YTTRYBE_AI_INSECURE', false),
         'api_base_url' => env('9YTTRYBE_AI_API_BASE_URL', 'https://api.openai.com'),
         'seo' => [
             'limit' => env('AI_SEO_DAILY_LIMIT', 80),
