@@ -218,38 +218,66 @@ class AIClient
             }
         }
 
-        return is_string($content) ? trim($content) : null;
+        if (is_string($content) && trim($content) !== '') {
+            return trim($content);
+        }
+
+        \Log::debug('Gemini returned success but no text content found.', [
+            'raw_body' => Str::limit($response->body(), 1000)
+        ]);
+
+        return null;
     }
 
     private function extractJson(string $text): ?array
     {
         $clean = trim($text);
-        $clean = preg_replace('/^```(?:json)?/i', '', $clean);
-        $clean = preg_replace('/```$/', '', $clean);
-        $clean = trim($clean);
-
+        
+        // 1. Try direct decode (cleanest case)
         $decoded = json_decode($clean, true);
         if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
             return $decoded;
         }
 
+        // 2. Greedy search for the outermost { ... }
         $start = strpos($clean, '{');
         $end = strrpos($clean, '}');
+
         if ($start !== false && $end !== false && $end > $start) {
             $snippet = substr($clean, $start, $end - $start + 1);
+            
+            // Clean up common LLM JSON junk
+            // Remove trailing commas before closing braces/brackets
+            $snippet = preg_replace('/,\s*([\}\]])/', '$1', $snippet);
+            // Remove potential control characters that break json_decode
+            $snippet = preg_replace('/[\x00-\x1F\x7F]/u', '', $snippet);
+
             $decoded = json_decode($snippet, true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                 return $decoded;
             }
+            
+            // Log if we found a snippet but it still failed (helpful for debugging)
+            \Log::debug('AI JSON snippet decode failed.', [
+                'error' => json_last_error_msg(),
+                'snippet_start' => substr($snippet, 0, 50),
+            ]);
         }
 
-        if (Str::startsWith($clean, '[') && Str::endsWith($clean, ']')) {
-            $decoded = json_decode($clean, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                return $decoded;
+        // 3. Fallback for arrays [ ... ]
+        if (Str::startsWith($clean, '[') || strpos($clean, '[') !== false) {
+            $startArr = strpos($clean, '[');
+            $endArr = strrpos($clean, ']');
+            if ($startArr !== false && $endArr !== false && $endArr > $startArr) {
+                $snippet = substr($clean, $startArr, $endArr - $startArr + 1);
+                $decoded = json_decode($snippet, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    return $decoded;
+                }
             }
         }
-
+        
+        \Log::debug('AI JSON extraction failed completely.', ['raw_len' => strlen($clean)]);
         return null;
     }
 }
