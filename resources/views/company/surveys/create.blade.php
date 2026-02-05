@@ -25,7 +25,7 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8" x-data="{ selectedTemplate: '', showForm: false }">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8" x-data="surveyCreateForm()">
         <!-- Templates Section -->
         <div class="lg:col-span-2">
             <h2 class="text-xl font-bold text-gray-900 mb-4">Choose a Template</h2>
@@ -34,7 +34,7 @@
                 <!-- Blank Template -->
                 <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-gray-300 cursor-pointer"
                      :class="{ 'ring-4 ring-indigo-500': selectedTemplate === '' }"
-                     @click="selectedTemplate = ''; showForm = true">
+                     @click="selectTemplate('')">
                     <div class="p-6">
                         <div class="flex items-center justify-center w-12 h-12 bg-white rounded-lg mb-4">
                             <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -50,7 +50,7 @@
                 @foreach($templates as $template)
                     <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-gray-200 cursor-pointer transform hover:scale-105"
                          :class="{ 'ring-4 ring-indigo-500 border-indigo-500': selectedTemplate === '{{ $template['key'] }}' }"
-                         @click="selectedTemplate = '{{ $template['key'] }}'; showForm = true">
+                         @click="selectTemplate('{{ $template['key'] }}')">
                         <div class="p-6">
                             <div class="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg mb-4">
                                 <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,7 +129,7 @@
                                name="title"
                                id="title"
                                required
-                               value="{{ old('title') }}"
+                               x-model="surveyTitle"
                                class="w-full rounded-xl border-2 border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 px-4 py-3 text-gray-900 font-medium shadow-sm hover:border-indigo-400 transition-all duration-200"
                                placeholder="e.g., Customer Satisfaction Survey">
                         @error('title')
@@ -153,8 +153,9 @@
                         <textarea name="description"
                                   id="description"
                                   rows="3"
+                                  x-model="surveyDescription"
                                   class="w-full rounded-xl border-2 border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 px-4 py-3 text-gray-900 shadow-sm hover:border-indigo-400 transition-all duration-200"
-                                  placeholder="Describe your survey...">{{ old('description') }}</textarea>
+                                  placeholder="Describe your survey..."></textarea>
                         @error('description')
                             <p class="mt-2 text-sm text-red-600 flex items-center">
                                 <svg class="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -326,3 +327,31 @@
     </div>
 </div>
 @endsection
+
+<script>
+function surveyCreateForm() {
+    return {
+        selectedTemplate: '{{ old('template', '') }}',
+        showForm: {{ old('template') || old('title') ? 'true' : 'false' }},
+        surveyTitle: '{{ old('title', '') }}',
+        surveyDescription: '{{ old('description', '') }}',
+        templates: @json($templates),
+
+        selectTemplate(key) {
+            this.selectedTemplate = key;
+            this.showForm = true;
+            
+            if (key) {
+                const template = this.templates.find(t => t.key === key);
+                if (template) {
+                    this.surveyTitle = template.name + ' Survey';
+                    this.surveyDescription = template.description;
+                }
+            } else {
+                this.surveyTitle = '';
+                this.surveyDescription = '';
+            }
+        }
+    }
+}
+</script>

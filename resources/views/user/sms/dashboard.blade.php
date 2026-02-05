@@ -312,15 +312,22 @@ document.addEventListener('DOMContentLoaded', function() {
     if (lineCtx) {
         @php
             // Get last 12 months of campaign data
-            $monthlyData = \App\Models\SmsCampaign::where('owner_id', auth()->id())
+            // Get last 12 months of campaign data
+            $campaigns = \App\Models\SmsCampaign::where('owner_id', auth()->id())
                 ->where('owner_type', get_class(auth()->user()))
-                ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, COUNT(*) as total,
-                    SUM(CASE WHEN status = "sent" THEN 1 ELSE 0 END) as sent,
-                    SUM(CASE WHEN status = "failed" THEN 1 ELSE 0 END) as failed')
                 ->where('created_at', '>=', now()->subMonths(12))
-                ->groupBy('month')
-                ->orderBy('month')
                 ->get();
+
+            $monthlyData = $campaigns->groupBy(function($date) {
+                return \Carbon\Carbon::parse($date->created_at)->format('Y-m');
+            })->map(function ($row, $key) {
+                return [
+                    'month' => $key,
+                    'total' => $row->count(),
+                    'sent' => $row->whereIn('status', ['sent', 'completed'])->count(),
+                    'failed' => $row->where('status', 'failed')->count(),
+                ];
+            })->sortBy('month');
 
             $months = $monthlyData->pluck('month')->map(function($m) {
                 return \Carbon\Carbon::parse($m)->format('M Y');

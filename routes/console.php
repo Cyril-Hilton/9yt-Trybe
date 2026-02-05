@@ -3,6 +3,14 @@
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+// Register command manually to ensure visibility
+Artisan::command('ai:generate-blog-posts {--count=} {--auto-publish} {--type=}', function () {
+    $this->call(App\Console\Commands\GenerateAiBlogPosts::class, [
+        '--count' => $this->option('count'),
+        '--auto-publish' => $this->option('auto-publish'),
+        '--type' => $this->option('type'),
+    ]);
+})->describe('Generate blog posts using AI');
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -18,7 +26,15 @@ Schedule::command('events:send-congratulatory-emails')
 // Schedule: Refresh news cache to keep headlines fresh
 Schedule::command('news:refresh-cache')
         ->hourly()
-        ->timezone('Africa/Accra');
+        ->timezone('Africa/Accra')
+        ->after(function () {
+             Artisan::call('page-cache:warm');
+        });
+
+// Schedule: Warm Page Cache (Every 15 minutes to keep it hot)
+Schedule::command('page-cache:warm')
+        ->everyFifteenMinutes()
+        ->withoutOverlapping();
 
 // Schedule: Send due scheduled SMS campaigns (runs every minute)
 Schedule::command('sms:send-scheduled-campaigns')
@@ -33,7 +49,7 @@ Schedule::command('seo:refresh --only-missing')
         ->withoutOverlapping();
 
 // Schedule: Daily AI blog generation (drafts by default)
-Schedule::command('blog:generate-ai')
+Schedule::command('ai:generate-blog-posts')
         ->dailyAt('03:10')
         ->timezone('Africa/Accra')
         ->withoutOverlapping();

@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>9yt !Trybe - Discover Amazing Events</title>
     <link rel="icon" type="image/png" href="{{ asset('ui/logo/9yt-trybe-logo-light.png') }}">
+    <link rel="preload" as="image" href="{{ asset('ui/logo/9yt-trybe-logo-light.png') }}">
+    <link rel="preload" as="style" href="{{ asset('css/glassmorphism.css') }}?v={{ time() }}">
+    <link rel="preload" as="video" href="{{ asset('ui/sliders/slide1.mp4') }}" type="video/mp4">
     <!-- CRITICAL: Set dark mode BEFORE any rendering to prevent flash -->
     <script>
         (function() {
@@ -714,7 +717,7 @@
                         loader.style.display = 'none';
                     }
                 }
-            }, 1000);
+            }, 200);
         });
     </script>
 
@@ -1399,7 +1402,7 @@
                     <!-- Event Image -->
                     <div class="relative bg-gradient-to-br from-indigo-500 to-blue-600 overflow-hidden">
                         @if($event->banner_image)
-                        <img src="{{ $event->banner_url }}" alt="{{ $event->title }}" class="w-full h-auto">
+                        <img src="{{ $event->banner_url }}" alt="{{ $event->title }}" class="w-full h-auto" loading="lazy">
                         @else
                         <div class="absolute inset-0 flex items-center justify-center">
                             <svg class="w-16 h-16 text-white opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1594,20 +1597,39 @@
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"/>
                                 </svg>
-                                <span class="font-medium">Location Blocked - Using Default</span>
+                                <span class="font-medium" x-text="locationPermissionGranted ? 'GPS Active: ' + (userLat ? userLat.toFixed(4) + ', ' + userLng.toFixed(4) : '') : 'Location Blocked - Using Default'"></span>
                             </div>
                         </template>
                     </div>
 
+                    <!-- Manual City Search (Visible when blocked or as alternative) -->
+                    <div class="flex items-center gap-2 max-w-sm w-full" x-show="!locationPermissionGranted || showManualSearch">
+                        <input type="text" 
+                               x-model="manualCity" 
+                               x-on:keydown.enter="searchCity()"
+                               placeholder="Enter city name..." 
+                               class="flex-1 px-4 py-2 rounded-lg border border-cyan-300 dark:border-cyan-700 bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none transition-all">
+                        <button x-on:click="searchCity()" 
+                                class="glass-btn-primary glass-btn-sm whitespace-nowrap">
+                            Update
+                        </button>
+                    </div>
+
                     <!-- Force GPS Button (always visible for debugging) -->
-                    <button x-on:click="startLocationTracking(true)"
-                            class="glass-btn-primary glass-btn-sm hover-lift transition-all">
-                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                        Request Location Permission
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button x-on:click="startLocationTracking(true)"
+                                class="glass-btn-primary glass-btn-sm hover-lift transition-all">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            Try GPS
+                        </button>
+                        <button x-on:click="showManualSearch = !showManualSearch"
+                                class="glass-btn-secondary glass-btn-sm" 
+                                x-text="showManualSearch ? 'Hide Search' : 'Search Manually'">
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1903,8 +1925,8 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-8">
                 <!-- About -->
                 <div>
-                    <h4 class="text-lg font-bold mb-4">9yt !Trybe</h4>
-                    <p class="text-gray-400 text-sm">We are the heart of the party, the soul of the night, and the creators of unforgettable memories.</p>
+                    <h4 class="text-lg font-bold mb-4 text-white">9yt !Trybe</h4>
+                    <p class="text-gray-400 dark:text-gray-300 text-sm">We are the heart of the party, the soul of the night, and the creators of unforgettable memories.</p>
                 </div>
 
                 <!-- Quick Links -->
@@ -1935,8 +1957,8 @@
 
                 <!-- Contact -->
                 <div>
-                    <h4 class="text-lg font-bold mb-4">Contact Us</h4>
-                    <ul class="space-y-2 text-sm text-gray-400">
+                    <h4 class="text-lg font-bold mb-4 text-white">Contact Us</h4>
+                    <ul class="space-y-2 text-sm text-gray-400 dark:text-gray-300">
                         <li><strong class="text-white">Email:</strong><br>9yttrybe@@gmail.com</li>
                         <li><strong class="text-white">Phone:</strong><br>0545566524 / 0267825223</li>
                         <li><strong class="text-white">WhatsApp:</strong><br>0267825223</li>
@@ -2080,6 +2102,8 @@
                 filterRating: 0,
                 filterPriceLevel: null,
                 showFilters: false,
+                manualCity: '',
+                showManualSearch: false,
 
                 // Location tracking
                 watchId: null,
@@ -2155,6 +2179,32 @@
                         this.userLng = -0.1870;
                         this.userCity = 'Accra';
                         this.loadLocationFromIp().finally(() => this.loadVenues());
+                    }
+                },
+
+                async searchCity() {
+                    if (!this.manualCity) return;
+                    this.loading = true;
+                    this.errorMessage = '';
+                    
+                    try {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(this.manualCity)}&format=json&limit=1&addressdetails=1`);
+                        const data = await response.json();
+                        
+                        if (data && data.length > 0) {
+                            this.userLat = parseFloat(data[0].lat);
+                            this.userLng = parseFloat(data[0].lon);
+                            this.userCity = data[0].address.city || data[0].address.town || data[0].address.village || data[0].display_name.split(',')[0];
+                            this.locationPermissionGranted = false; // Disable GPS pulse
+                            this.loadVenues();
+                            this.showManualSearch = false;
+                        } else {
+                            this.errorMessage = 'City not found. Please try another name.';
+                        }
+                    } catch (error) {
+                        this.errorMessage = 'Location search failed. Please try again.';
+                    } finally {
+                        this.loading = false;
                     }
                 },
 

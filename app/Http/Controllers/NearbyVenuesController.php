@@ -141,16 +141,30 @@ class NearbyVenuesController extends Controller
                     
                     // Construct address from tags
                     $addressParts = [];
-                    if (isset($tags['addr:street'])) $addressParts[] = $tags['addr:street'] . (isset($tags['addr:housenumber']) ? ' ' . $tags['addr:housenumber'] : '');
+                    if (isset($tags['addr:street'])) {
+                        $street = $tags['addr:street'];
+                        if (isset($tags['addr:housenumber'])) {
+                            $street .= ' ' . $tags['addr:housenumber'];
+                        }
+                        $addressParts[] = $street;
+                    }
+                    
                     if (isset($tags['addr:suburb'])) $addressParts[] = $tags['addr:suburb'];
+                    if (isset($tags['addr:neighbourhood'])) $addressParts[] = $tags['addr:neighbourhood'];
                     if (isset($tags['addr:city'])) $addressParts[] = $tags['addr:city'];
+                    if (isset($tags['addr:postcode'])) $addressParts[] = $tags['addr:postcode'];
                     
                     $address = implode(', ', $addressParts);
-                    if (empty($address)) $address = $params['category'] . ' near ' . $userLat . ', ' . $userLng;
+                    if (empty($address)) {
+                        // Better fallback for address
+                        $address = ($tags['amenity'] ?? $tags['tourism'] ?? $tags['leisure'] ?? $params['category']) . ' near ' . round($lat, 4) . ', ' . round($lon, 4);
+                    }
+
+                    $venueName = $tags['name'] ?? 'Unnamed ' . ucfirst($params['category']);
 
                     $allPlaces[] = [
                         'id' => $element['type'] . '/' . $element['id'],
-                        'name' => $tags['name'] ?? 'Unnamed ' . ucfirst($params['category']),
+                        'name' => $venueName,
                         'address' => $address,
                         'latitude' => $lat,
                         'longitude' => $lon,
@@ -158,7 +172,7 @@ class NearbyVenuesController extends Controller
                         'user_ratings_total' => 0,
                         'price_level' => null,
                         'phone' => $tags['phone'] ?? ($tags['contact:phone'] ?? null),
-                        'maps_url' => "https://www.openstreetmap.org/" . $element['type'] . "/" . $element['id'],
+                        'maps_url' => "https://www.google.com/maps/search/?api=1&query=" . urlencode($venueName . " @ " . $lat . "," . $lon),
                         'photo_reference' => null,
                         'photo_url' => $this->getCategoryPlaceholderImage($params['category'], $element['id']),
                         'distance_km' => round($distance, 2),

@@ -218,15 +218,15 @@
                             @foreach($recentCredits as $credit)
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-4">
-                                        @if($credit->company)
-                                            <p class="text-sm font-bold text-gray-900">{{ $credit->company->name }}</p>
-                                            <p class="text-xs text-gray-500">{{ $credit->company->email }}</p>
+                                        @if($credit->owner)
+                                            <p class="text-sm font-bold text-gray-900">{{ $credit->owner->name ?? $credit->owner->company_name }}</p>
+                                            <p class="text-xs text-gray-500">{{ $credit->owner->email }}</p>
                                         @else
                                             <p class="text-sm text-gray-500">No organizer</p>
                                         @endif
                                     </td>
                                     <td class="px-6 py-4">
-                                        <p class="text-lg font-black text-indigo-600">+{{ number_format($credit->sms_credits) }}</p>
+                                        <p class="text-lg font-black text-indigo-600">+{{ number_format($credit->credits) }}</p>
                                     </td>
                                     <td class="px-6 py-4">
                                         <p class="text-sm text-gray-700">{{ $credit->notes ?? 'N/A' }}</p>

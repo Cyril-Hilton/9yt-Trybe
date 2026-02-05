@@ -113,16 +113,21 @@ class AdminSmsCampaignController extends Controller
 
         $totalUsers = User::count();
         $totalOrganizers = Company::count();
+        $totalSavedContacts = SmsContact::where('owner_id', $admin->id)
+            ->where('owner_type', get_class($admin))
+            ->count();
 
         // Get counts for recipient selection
         $stats = [
             'total_users' => $totalUsers,
             'total_organizers' => $totalOrganizers,
-            'total_contacts' => $totalUsers + $totalOrganizers,
+            'total_contacts' => $totalUsers + $totalOrganizers + $totalSavedContacts,
+            'total_saved_contacts' => $totalSavedContacts,
         ];
 
         $users = User::orderBy('name')->get();
         $organizers = Company::orderBy('name')->get();
+        $groups = SmsContact::getUniqueGroups($admin->id, get_class($admin));
 
         return view('admin.sms.send-bulk', compact(
             'senderIds',
@@ -130,6 +135,7 @@ class AdminSmsCampaignController extends Controller
             'stats',
             'users',
             'organizers',
+            'groups',
             'totalUsers',
             'totalOrganizers'
         ));
@@ -144,8 +150,10 @@ class AdminSmsCampaignController extends Controller
             'campaign_name' => 'required|string|max:255',
             'message' => 'required|string|max:1000',
             'sender_id' => 'required|string', // Required for admin - can type any sender ID
-            'recipient_type' => 'required|in:manual,all,users,organizers,custom,excel',
+            'recipient_type' => 'required|in:manual,all,users,organizers,custom,excel,contacts,group',
             'recipients' => 'required_if:recipient_type,manual|nullable|string',
+            'contact_ids' => 'required_if:recipient_type,contacts|nullable|array',
+            'group' => 'required_if:recipient_type,group|nullable|string',
             'user_ids' => 'required_if:recipient_type,custom|nullable|array',
             'organizer_ids' => 'required_if:recipient_type,custom|nullable|array',
             'excel_file' => 'required_if:recipient_type,excel|nullable|file|mimes:xlsx,xls,csv',
@@ -311,6 +319,22 @@ class AdminSmsCampaignController extends Controller
                     return $this->importFromExcel($request->file('excel_file'));
                 }
                 return [];
+
+            case 'contacts':
+                // Get phone numbers from selected contacts
+                return SmsContact::where('owner_id', $admin->id)
+                    ->where('owner_type', get_class($admin))
+                    ->whereIn('id', $request->contact_ids)
+                    ->pluck('phone_number')
+                    ->toArray();
+
+            case 'group':
+                // Get phone numbers from group
+                return SmsContact::where('owner_id', $admin->id)
+                    ->where('owner_type', get_class($admin))
+                    ->where('group', $request->group)
+                    ->pluck('phone_number')
+                    ->toArray();
 
             default:
                 return [];

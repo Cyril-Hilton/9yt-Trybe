@@ -38,8 +38,17 @@
         loginMethod: {{ session('otp_sent') ? "'phone'" : "'email'" }},
         otpSent: {{ session('otp_sent') ? 'true' : 'false' }},
         phone: '{{ session('phone') ?? '' }}',
-        countryCode: '{{ old('country_code', '+233') }}'
-    }" class="space-y-6">
+        countdown: 60,
+        timer: null,
+        startTimer() {
+            this.countdown = 60;
+            if (this.timer) clearInterval(this.timer);
+            this.timer = setInterval(() => {
+                if (this.countdown > 0) this.countdown--;
+                else clearInterval(this.timer);
+            }, 1000);
+        }
+    }" x-init="if (otpSent) startTimer()" class="space-y-6">
         {{-- Toggle Buttons --}}
         <div class="flex gap-2">
             <button type="button"
@@ -94,25 +103,6 @@
                 <div class="relative">
                     <input
                         id="password"
-                        name="password"
-                        :type="showPassword ? 'text' : 'password'"
-                        required
-                        class="appearance-none relative block w-full px-3 py-2 pr-12 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 rounded-lg focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm @error('password') border-red-500 @enderror"
-                        placeholder="********"
-                    >
-                    <button
-                        type="button"
-                        @click="showPassword = !showPassword"
-                        class="absolute inset-y-0 right-0 px-3 text-sm text-gray-600 dark:text-gray-300 hover:text-cyan-600"
-                    >
-                        <span x-text="showPassword ? 'Hide' : 'Show'"></span>
-                    </button>
-                </div>
-                @error('password')
-                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                @enderror
-            </div>
-        </div>
 
         <div class="flex items-center justify-between">
             <div class="flex items-center">
@@ -169,6 +159,7 @@
 
     {{-- Phone OTP Login Form --}}
     <form x-show="loginMethod === 'phone'" class="space-y-6"
+          x-ref="phoneForm"
           action="{{ route('user.send-otp') }}"
           method="POST"
           @submit="if (otpSent) { $el.action = '{{ route('user.verify-otp') }}' } else { $el.action = '{{ route('user.send-otp') }}' }">
@@ -179,29 +170,17 @@
                 <label for="phone-otp" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Phone Number
                 </label>
-                <div class="flex gap-2">
-                    <select
-                        id="country_code"
-                        name="country_code"
-                        x-model="countryCode"
-                        class="w-28 px-2 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:ring-cyan-500 focus:border-cyan-500"
-                    >
-                        <option value="+233">+233 GH</option>
-                        <option value="+234">+234 NG</option>
-                        <option value="+27">+27 ZA</option>
-                        <option value="+44">+44 UK</option>
-                        <option value="+1">+1 US</option>
-                    </select>
+                <div class="relative">
                     <input
                         id="phone-otp"
                         name="phone"
                         type="tel"
                         x-model="phone"
                         :required="!otpSent"
-                        class="flex-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 rounded-lg focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm @error('phone') border-red-500 @enderror"
+                        class="w-full appearance-none relative block px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 rounded-lg focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm @error('phone') border-red-500 @enderror"
                         placeholder="Phone number"
-                        @blur="if ($el.value && $el.value.charAt(0) !== '+') { $el.value = `${countryCode}${$el.value.replace(/^0+/, '')}` }"
                     >
+                    <input type="hidden" name="full_phone" id="full_phone">
                 </div>
                 @error('phone')
                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -246,12 +225,54 @@
             </button>
         </div>
 
-        <div x-show="otpSent" x-cloak class="text-center">
-            <a href="{{ route('user.login') }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-cyan-600 dark:hover:text-cyan-400">
-                Didn't receive code? Try again
-            </a>
+        <div x-show="otpSent" x-cloak class="text-center space-y-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                Didn't receive the code? 
+                <span x-show="countdown > 0" class="font-medium text-purple-600 dark:text-purple-400">
+                    Resend in <span x-text="countdown"></span>s
+                </span>
+                <button type="button" 
+                        x-show="countdown === 0"
+                        @click="otpSent = false; $nextTick(() => $refs.phoneForm.submit())"
+                        class="font-medium text-purple-600 dark:text-purple-400 hover:text-purple-500 dark:hover:text-purple-300 transition-colors">
+                    Resend OTP
+                </button>
+            </p>
+            
+            <button type="button" 
+                    @click="otpSent = false; phone = '';"
+                    class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+                Change phone number
+            </button>
         </div>
     </form>
     </div>
 </div>
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const phoneInput = document.querySelector("#phone-otp");
+        const fullPhoneInput = document.querySelector("#full_phone");
+
+        if (phoneInput) {
+            const iti = window.intlTelInput(phoneInput, {
+                initialCountry: "gh",
+                separateDialCode: true,
+                utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/js/utils.js"
+            });
+
+            phoneInput.addEventListener('change', function() {
+                fullPhoneInput.value = iti.getNumber();
+            });
+
+            phoneInput.addEventListener('keyup', function() {
+                fullPhoneInput.value = iti.getNumber();
+            });
+
+            phoneInput.closest('form').addEventListener('submit', function() {
+                fullPhoneInput.value = iti.getNumber();
+            });
+        }
+    });
+</script>
 @endsection

@@ -276,7 +276,7 @@ class EventCheckoutController extends Controller
             ])->with('error', 'Please sign in to view your tickets.');
         }
 
-        if ($order->user_id !== $currentUserId) {
+        if ($order->user_id != $currentUserId) {
             abort(403, 'Unauthorized access to this order.');
         }
 

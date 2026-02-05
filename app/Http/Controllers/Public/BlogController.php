@@ -84,11 +84,11 @@ class BlogController extends Controller
             $description = e(Str::limit(strip_tags($article->description), 300));
             $pubDate = $article->published_at ? $article->published_at->toRfc2822String() : now()->toRfc2822String();
 
-            return \"<item><title>{$title}</title><link>{$link}</link><guid>{$link}</guid><description>{$description}</description><pubDate>{$pubDate}</pubDate></item>\";
+            return "<item><title>{$title}</title><link>{$link}</link><guid>{$link}</guid><description>{$description}</description><pubDate>{$pubDate}</pubDate></item>";
         })->implode('');
 
-        $rss = '<?xml version=\"1.0\" encoding=\"UTF-8\"?>';
-        $rss .= '<rss version=\"2.0\"><channel>';
+        $rss = '<?xml version="1.0" encoding="UTF-8"?>';
+        $rss .= '<rss version="2.0"><channel>';
         $rss .= '<title>9yt !Trybe Blog</title>';
         $rss .= '<link>' . url('/blog') . '</link>';
         $rss .= '<description>How-tos and whats-on from 9yt !Trybe</description>';

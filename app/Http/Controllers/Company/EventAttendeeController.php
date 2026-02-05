@@ -31,7 +31,7 @@ class EventAttendeeController extends Controller
     {
         $this->authorize('view', $event);
 
-        if ($attendee->event_id !== $event->id) {
+        if ($attendee->event_id != $event->id) {
             abort(403);
         }
 

@@ -13,6 +13,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         Conference::class => ConferencePolicy::class,
         Event::class => EventPolicy::class,
+        \App\Models\Poll::class => \App\Policies\PollPolicy::class,
     ];
 
     public function boot(): void

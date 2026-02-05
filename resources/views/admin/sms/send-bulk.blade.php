@@ -259,6 +259,52 @@
                                     </div>
                                 </div>
                             </label>
+
+                            <!-- Saved Contacts (9yte Trybe Contacts) -->
+                            <label class="relative cursor-pointer group">
+                                <input type="radio" name="recipient_type" value="contacts" x-model="recipientType" class="peer sr-only">
+                                <div class="h-full p-5 border-2 border-gray-300 rounded-2xl hover:border-yellow-400 hover:shadow-lg peer-checked:border-yellow-600 peer-checked:bg-gradient-to-br peer-checked:from-yellow-50 peer-checked:to-yellow-100 transition-all duration-300 transform hover:-translate-y-1">
+                                    <div class="flex flex-col items-center text-center space-y-3">
+                                        <div class="w-14 h-14 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                            <svg class="w-7 h-7 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <span class="font-bold text-gray-900 dark:text-white block mb-1">Saved Contacts</span>
+                                            <p class="text-xs text-gray-700 dark:text-gray-300">From contacts database</p>
+                                        </div>
+                                        <div class="absolute top-3 right-3 w-6 h-6 rounded-full bg-yellow-600 items-center justify-center hidden peer-checked:flex">
+                                            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <!-- Contact Group -->
+                            <label class="relative cursor-pointer group">
+                                <input type="radio" name="recipient_type" value="group" x-model="recipientType" class="peer sr-only">
+                                <div class="h-full p-5 border-2 border-gray-300 rounded-2xl hover:border-teal-400 hover:shadow-lg peer-checked:border-teal-600 peer-checked:bg-gradient-to-br peer-checked:from-teal-50 peer-checked:to-teal-100 transition-all duration-300 transform hover:-translate-y-1">
+                                    <div class="flex flex-col items-center text-center space-y-3">
+                                        <div class="w-14 h-14 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                            <svg class="w-7 h-7 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <span class="font-bold text-gray-900 dark:text-white block mb-1">Contact Group</span>
+                                            <p class="text-xs text-gray-700 dark:text-gray-300">Send by group name</p>
+                                        </div>
+                                        <div class="absolute top-3 right-3 w-6 h-6 rounded-full bg-teal-600 items-center justify-center hidden peer-checked:flex">
+                                            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
                         </div>
                     </div>
 
@@ -324,6 +370,53 @@
                                 This will send SMS to <strong>{{ $totalUsers }} attendees</strong>
                             </p>
                         </div>
+                    </div>
+
+                    <!-- Saved Contacts Info -->
+                    <div x-show="recipientType === 'contacts'" x-cloak class="space-y-4">
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                            Select from your Contacts Database
+                        </label>
+                        <div class="border-2 border-gray-300 dark:border-gray-600 rounded-xl p-4 max-h-80 overflow-y-auto bg-gray-50 dark:bg-gray-800">
+                            @php
+                                $adminContacts = \App\Models\SmsContact::where('owner_id', auth()->id())
+                                    ->where('owner_type', get_class(auth()->user()))
+                                    ->orderBy('name')
+                                    ->get();
+                            @endphp
+                            @forelse($adminContacts as $contact)
+                                <label class="flex items-center p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 rounded-lg cursor-pointer">
+                                    <input type="checkbox" name="contact_ids[]" value="{{ $contact->id }}" class="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded">
+                                    <span class="ml-3 text-sm text-gray-700 dark:text-gray-300">
+                                        {{ $contact->name ?? 'Unnamed' }} ({{ $contact->phone_number }})
+                                        @if($contact->group)
+                                            <span class="ml-2 px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-md text-xs">{{ $contact->group }}</span>
+                                        @endif
+                                    </span>
+                                </label>
+                            @empty
+                                <div class="text-center py-6">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">No contacts found in your database.</p>
+                                    <a href="{{ route('admin.sms-contacts.create') }}" class="mt-2 inline-block text-sm text-indigo-600 font-bold hover:underline italic">
+                                        + Add your first contact
+                                    </a>
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    <!-- Contact Group -->
+                    <div x-show="recipientType === 'group'" x-cloak>
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                            Select Contact Group
+                        </label>
+                        <select name="group" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+                            <option value="">-- Select Group --</option>
+                            @foreach($groups as $group)
+                                <option value="{{ $group }}">{{ $group }}</option>
+                            @endforeach
+                        </select>
+                        <p class="mt-2 text-xs text-gray-500">Only groups that have contacts with phone numbers will be shown.</p>
                     </div>
 
                     <!-- Organizers Only Info -->
@@ -497,6 +590,11 @@ function bulkSmsForm() {
             } else if (this.recipientType === 'custom') {
                 count = document.querySelectorAll('input[name="user_ids[]"]:checked').length +
                        document.querySelectorAll('input[name="organizer_ids[]"]:checked').length;
+            } else if (this.recipientType === 'contacts') {
+                count = document.querySelectorAll('input[name="contact_ids[]"]:checked').length;
+            } else if (this.recipientType === 'group') {
+                // Approximate - we don't know the exact count in frontend for group selection without AJAX
+                count = 0; 
             }
 
             return count * creditsPerSms;

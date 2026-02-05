@@ -266,7 +266,7 @@ class SearchController extends Controller
     {
         $query = trim((string) $request->input('q', ''));
 
-        if ($query === '') {
+        if ($query === '' || strlen($query) < 2) {
             return response()->json([
                 'suggestions' => [],
             ]);
@@ -277,16 +277,16 @@ class SearchController extends Controller
         $isShortQuery = strlen($query) <= 2;
         $primaryTake = $isShortQuery ? 5 : 8;
         $secondaryTake = $isShortQuery ? 3 : 5;
+        
+        // Use fuzzy variations for broader matching
+        $variations = $this->getFuzzyVariations($query);
         $likeAny = '%' . $query . '%';
-        $likePrefix = $query . '%';
 
         $staticPageRoutes = [
             ['route' => 'home', 'icon' => 'home', 'title' => 'Home'],
             ['route' => 'events.index', 'icon' => 'calendar', 'title' => 'Events'],
             ['route' => 'shop.index', 'icon' => 'shopping-bag', 'title' => 'Shop'],
             ['route' => 'organizers.index', 'icon' => 'building', 'title' => 'Organizers'],
-            ['route' => 'surveys.index', 'icon' => 'clipboard-list', 'title' => 'Surveys'],
-            ['route' => 'conferences.index', 'icon' => 'users', 'title' => 'Conferences'],
             ['route' => 'about', 'icon' => 'info', 'title' => 'About'],
             ['route' => 'contact', 'icon' => 'mail', 'title' => 'Contact'],
         ];
@@ -306,11 +306,11 @@ class SearchController extends Controller
             return str_contains(strtolower($page['title']), $queryLower);
         })->map(function ($page) {
             return [
-                'type' => $page['type'],
+                'type' => 'page',
                 'icon' => $page['icon'],
                 'id' => $page['title'],
                 'title' => $page['title'],
-                'subtitle' => 'Page',
+                'subtitle' => 'Main Page',
                 'url' => $page['url'],
                 'image' => null,
             ];
@@ -318,12 +318,14 @@ class SearchController extends Controller
 
         $suggestions = $suggestions->concat($pageMatches);
 
+        // Get events with fuzzy logic
         try {
             $events = Event::where('status', 'approved')
-                ->where(function ($q) use ($likeAny) {
-                        $q->where('title', 'LIKE', $likeAny)
-                          ->orWhere('venue_name', 'LIKE', $likeAny)
-                          ->orWhere('summary', 'LIKE', $likeAny);
+                ->where(function ($q) use ($variations) {
+                    foreach ($variations as $var) {
+                        $q->orWhere('title', 'LIKE', "%{$var}%")
+                          ->orWhere('venue_name', 'LIKE', "%{$var}%");
+                    }
                 })
                 ->select('id', 'title', 'slug', 'start_date', 'banner_image', 'venue_name')
                 ->with('company:id,name')
@@ -336,28 +338,25 @@ class SearchController extends Controller
                         'icon' => 'calendar',
                         'id' => $event->id,
                         'title' => $event->title,
-                        'subtitle' => $event->company->name ?? $event->venue_name ?? '',
+                        'subtitle' => ($event->company->name ?? $event->venue_name ?? '') . ($event->start_date ? ' • ' . $event->start_date->format('M d') : ''),
                         'url' => route('events.show', $event->slug),
-                    'image' => $event->banner_image ? $event->banner_url : null,
-                        'date' => $event->start_date ? $event->start_date->format('M d, Y') : null,
+                        'image' => $event->banner_image ? $event->banner_url : null,
                     ];
                 });
             $suggestions = $suggestions->concat($events);
-        } catch (\Exception $e) {
-            // Skip events on error
-        }
+        } catch (\Exception $e) { }
 
-        // Get companies
+        // Get companies with fuzzy logic
         try {
             $companies = Company::where(function ($q) {
-                    $q->where('is_suspended', false)
-                      ->orWhereNull('is_suspended');
+                    $q->where('is_suspended', false)->orWhereNull('is_suspended');
                 })
                 ->whereNotNull('slug')
                 ->where('slug', '!=', '')
-                ->where(function ($q) use ($likeAny) {
-                        $q->where('name', 'LIKE', $likeAny)
-                          ->orWhere('description', 'LIKE', $likeAny);
+                ->where(function ($q) use ($variations) {
+                    foreach ($variations as $var) {
+                        $q->orWhere('name', 'LIKE', "%{$var}%");
+                    }
                 })
                 ->select('id', 'name', 'logo', 'slug')
                 ->take($primaryTake)
@@ -374,20 +373,17 @@ class SearchController extends Controller
                     ];
                 });
             $suggestions = $suggestions->concat($companies);
-        } catch (\Exception $e) {
-            // Skip organizers on error
-        }
+        } catch (\Exception $e) { }
 
         // Get categories
         try {
             $categories = Category::where('is_active', true)
-                ->where(function ($q) use ($likeAny) {
-                        $q->where('name', 'LIKE', $likeAny)
-                          ->orWhere('description', 'LIKE', $likeAny);
+                ->where(function ($q) use ($query) {
+                        $q->where('name', 'LIKE', "%{$query}%");
                 })
-                ->select('id', 'name', 'slug', 'color')
+                ->select('id', 'name', 'slug')
                 ->withCount('events')
-                ->take($primaryTake)
+                ->take($secondaryTake)
                 ->get()
                 ->map(function ($category) {
                     return [
@@ -397,83 +393,20 @@ class SearchController extends Controller
                         'title' => $category->name,
                         'subtitle' => $category->events_count . ' events',
                         'url' => route('categories.show', $category->slug),
-                        'color' => $category->color,
                     ];
                 });
             $suggestions = $suggestions->concat($categories);
-        } catch (\Exception $e) {
-            // Skip categories on error
-        }
-
-        // Get polls - skip if Poll model doesn't exist or route doesn't exist
-        if (class_exists('App\Models\Poll')) {
-            try {
-                $polls = Poll::where('status', 'active')
-                    ->where(function ($q) use ($query) {
-                        $q->where('title', 'LIKE', "%{$query}%")
-                          ->orWhere('description', 'LIKE', "%{$query}%");
-                    })
-                    ->select('id', 'title', 'slug', 'banner_image', 'total_votes')
-                    ->take($secondaryTake)
-                    ->get()
-                    ->map(function ($poll) {
-                        return [
-                            'type' => 'poll',
-                            'icon' => 'chart-bar',
-                            'id' => $poll->id,
-                            'title' => $poll->title,
-                            'subtitle' => number_format($poll->total_votes) . ' votes',
-                            'url' => url('/polls/' . $poll->slug),
-                        'image' => $poll->banner_image ? $poll->banner_url : null,
-                        ];
-                    });
-                $suggestions = $suggestions->concat($polls);
-            } catch (\Exception $e) {
-                // Skip polls if there's an error
-            }
-        }
-
-        // Get contestants - skip if Contestant model doesn't exist
-        if (class_exists('App\Models\Contestant')) {
-            try {
-                $contestants = Contestant::where('status', 'active')
-                    ->where(function ($q) use ($query) {
-                        $q->where('name', 'LIKE', "%{$query}%");
-                    })
-                    ->whereHas('poll', function ($q) {
-                        $q->where('status', 'active');
-                    })
-                    ->select('id', 'name', 'photo', 'poll_id')
-                    ->with('poll:id,title,slug')
-                    ->take($secondaryTake)
-                    ->get()
-                    ->map(function ($contestant) {
-                        return [
-                            'type' => 'contestant',
-                            'icon' => 'user',
-                            'id' => $contestant->id,
-                            'title' => $contestant->name,
-                            'subtitle' => 'In: ' . ($contestant->poll->title ?? 'Poll'),
-                            'url' => url('/polls/' . ($contestant->poll->slug ?? '')),
-                            'image' => $contestant->photo ? asset('storage/' . $contestant->photo) : null,
-                        ];
-                    });
-                $suggestions = $suggestions->concat($contestants);
-            } catch (\Exception $e) {
-                // Skip contestants if there's an error
-            }
-        }
+        } catch (\Exception $e) { }
 
         // Get products
         try {
             $products = ShopProduct::where('status', 'approved')
                 ->where('is_active', true)
-                ->where(function ($q) use ($likeAny) {
-                        $q->where('name', 'LIKE', $likeAny)
-                          ->orWhere('description', 'LIKE', $likeAny);
+                ->where(function ($q) use ($query) {
+                        $q->where('name', 'LIKE', "%{$query}%");
                 })
                 ->select('id', 'name', 'slug', 'image_path', 'price')
-                ->take($primaryTake)
+                ->take($secondaryTake)
                 ->get()
                 ->map(function ($product) {
                     return [
@@ -487,109 +420,9 @@ class SearchController extends Controller
                     ];
                 });
             $suggestions = $suggestions->concat($products);
-        } catch (\Exception $e) {
-            // Skip products on error
-        }
+        } catch (\Exception $e) { }
 
-        // Get blog posts
-        try {
-            $blogs = Article::where('type', 'blog')
-                ->where('is_published', true)
-                ->where(function ($q) use ($likeAny) {
-                    $q->where('title', 'LIKE', $likeAny)
-                      ->orWhere('description', 'LIKE', $likeAny);
-                })
-                ->select('id', 'title', 'slug', 'published_at')
-                ->take($secondaryTake)
-                ->get()
-                ->map(function ($article) {
-                    return [
-                        'type' => 'blog',
-                        'icon' => 'document-text',
-                        'id' => $article->id,
-                        'title' => $article->title,
-                        'subtitle' => 'Blog post',
-                        'url' => route('blog.show', $article->slug),
-                        'image' => null,
-                    ];
-                });
-            $suggestions = $suggestions->concat($blogs);
-        } catch (\Exception $e) {
-            // Skip blogs on error
-        }
-
-        // Get surveys
-        $surveys = Survey::where('status', 'active')
-            ->where(function ($q) use ($query) {
-                $q->where('title', 'LIKE', "%{$query}%")
-                  ->orWhere('description', 'LIKE', "%{$query}%");
-            })
-            ->select('id', 'title', 'slug', 'responses_count')
-            ->take($secondaryTake)
-            ->get()
-            ->map(function ($survey) {
-                return [
-                    'type' => 'survey',
-                    'icon' => 'clipboard-list',
-                    'id' => $survey->id,
-                    'title' => $survey->title,
-                    'subtitle' => number_format($survey->responses_count ?? 0) . ' responses',
-                    'url' => url('/survey/' . $survey->slug),
-                    'image' => null,
-                ];
-            });
-        $suggestions = $suggestions->concat($surveys);
-
-        // Get conferences
-        $conferences = Conference::where('status', 'active')
-            ->where(function ($q) use ($query) {
-                $q->where('title', 'LIKE', "%{$query}%")
-                  ->orWhere('description', 'LIKE', "%{$query}%")
-                  ->orWhere('venue', 'LIKE', "%{$query}%");
-            })
-            ->select('id', 'title', 'slug', 'logo', 'start_date', 'venue')
-            ->take($secondaryTake)
-            ->get()
-            ->map(function ($conference) {
-                return [
-                    'type' => 'conference',
-                    'icon' => 'users',
-                    'id' => $conference->id,
-                    'title' => $conference->title,
-                    'subtitle' => $conference->venue ?? ($conference->start_date ? $conference->start_date->format('M d, Y') : ''),
-                    'url' => url('/register/' . $conference->slug),
-                    'image' => $conference->logo ? asset('storage/' . $conference->logo) : null,
-                ];
-            });
-        $suggestions = $suggestions->concat($conferences);
-
-        // Get News Articles
-        try {
-            $articles = \App\Models\Article::where('is_published', true)
-                ->where(function ($q) use ($query) {
-                    $q->where('title', 'LIKE', "%{$query}%")
-                      ->orWhere('description', 'LIKE', "%{$query}%");
-                })
-                ->select('id', 'title', 'slug', 'image_path', 'source_name')
-                ->take($secondaryTake)
-                ->get()
-                ->map(function ($article) {
-                    return [
-                        'type' => 'news',
-                        'icon' => 'newspaper',
-                        'id' => $article->id,
-                        'title' => $article->title,
-                        'subtitle' => 'News from ' . $article->source_name,
-                        'url' => route('news.index'), // Update if dedicated route exists
-                        'image' => $article->image_url ?? null,
-                    ];
-                });
-            $suggestions = $suggestions->concat($articles);
-        } catch (\Exception $e) {
-            // Article table might not exist in production yet
-        }
-
-        // Add "see all results" option
+        // Add "see all results" action
         if ($suggestions->count() > 0) {
             $suggestions->push([
                 'type' => 'action',
@@ -603,7 +436,7 @@ class SearchController extends Controller
         }
 
         return response()->json([
-            'suggestions' => $suggestions,
+            'suggestions' => $suggestions->values(),
             'query' => $query,
         ]);
     }

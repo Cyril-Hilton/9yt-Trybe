@@ -25,6 +25,7 @@ class SendScheduledSmsCampaigns extends Command
 
         if ($campaigns->isEmpty()) {
             $this->info('No scheduled campaigns due.');
+            Log::debug('SMS scheduled check: No campaigns due.');
             return 0;
         }
 

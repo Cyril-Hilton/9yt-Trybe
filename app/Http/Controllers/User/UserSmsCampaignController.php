@@ -196,8 +196,18 @@ class UserSmsCampaignController extends Controller
 
         // Get SMS credit balance
         $creditBalance = $this->smsService->getCreditBalance($user);
+        $creditBalanceValue = $creditBalance->balance ?? 0;
 
-        return view('user.sms.campaigns.resend', compact('campaign', 'recipientsText', 'senderIds', 'creditBalance'));
+        // Get contact groups
+        $groups = \App\Models\SmsContact::getUniqueGroups($user->id, get_class($user));
+
+        // Get all contacts for selection (in case they want to add more)
+        $contacts = \App\Models\SmsContact::where('owner_id', $user->id)
+            ->where('owner_type', get_class($user))
+            ->orderBy('name')
+            ->get();
+
+        return view('user.sms.campaigns.resend', compact('campaign', 'recipientsText', 'senderIds', 'creditBalance', 'creditBalanceValue', 'groups', 'contacts'));
     }
 
     /**

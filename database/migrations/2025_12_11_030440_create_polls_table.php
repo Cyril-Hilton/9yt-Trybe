@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('banner_image')->nullable();
 
             // Poll settings
-            $table->enum('poll_type', ['pageant', 'contest', 'election', 'general'])->default('general');
+            $table->enum('poll_type', ['pageant', 'contest', 'election', 'voting', 'survey', 'general'])->default('general');
             $table->enum('voting_type', ['free', 'paid'])->default('free');
             $table->decimal('vote_price', 10, 2)->default(0); // Price per vote if paid
             $table->integer('votes_per_transaction')->default(1); // How many votes user can buy at once

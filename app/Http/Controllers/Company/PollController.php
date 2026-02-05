@@ -85,7 +85,7 @@ class PollController extends Controller
     public function show(Poll $poll)
     {
         // Check if poll belongs to this company
-        if ((int) $poll->company_id !== (int) auth('company')->id()) {
+        if ($poll->company_id != auth('company')->id()) {
             abort(403);
         }
 
@@ -111,7 +111,7 @@ class PollController extends Controller
     public function edit(Poll $poll)
     {
         // Check if poll belongs to this company
-        if ((int) $poll->company_id !== (int) auth('company')->id()) {
+        if ($poll->company_id != auth('company')->id()) {
             abort(403);
         }
 
@@ -130,7 +130,7 @@ class PollController extends Controller
     public function update(Request $request, Poll $poll)
     {
         // Check if poll belongs to this company
-        if ((int) $poll->company_id !== (int) auth('company')->id()) {
+        if ($poll->company_id != auth('company')->id()) {
             abort(403);
         }
 
@@ -173,7 +173,7 @@ class PollController extends Controller
     public function destroy(Poll $poll)
     {
         // Check if poll belongs to this company
-        if ((int) $poll->company_id !== (int) auth('company')->id()) {
+        if ($poll->company_id != auth('company')->id()) {
             abort(403);
         }
 
@@ -193,7 +193,7 @@ class PollController extends Controller
     public function publish(Poll $poll)
     {
         // Check if poll belongs to this company
-        if ((int) $poll->company_id !== (int) auth('company')->id()) {
+        if ($poll->company_id != auth('company')->id()) {
             abort(403);
         }
 
@@ -212,7 +212,7 @@ class PollController extends Controller
     public function close(Poll $poll)
     {
         // Check if poll belongs to this company
-        if ((int) $poll->company_id !== (int) auth('company')->id()) {
+        if ($poll->company_id != auth('company')->id()) {
             abort(403);
         }
 
@@ -227,7 +227,7 @@ class PollController extends Controller
     public function addContestant(Request $request, Poll $poll)
     {
         // Check if poll belongs to this company
-        if ((int) $poll->company_id !== (int) auth('company')->id()) {
+        if ($poll->company_id != auth('company')->id()) {
             abort(403);
         }
 
@@ -260,11 +260,11 @@ class PollController extends Controller
     public function removeContestant(Poll $poll, Contestant $contestant)
     {
         // Check if poll belongs to this company
-        if ((int) $poll->company_id !== (int) auth('company')->id()) {
+        if ($poll->company_id != auth('company')->id()) {
             abort(403);
         }
 
-        if ($contestant->poll_id !== $poll->id) {
+        if ($contestant->poll_id != $poll->id) {
             abort(404);
         }
 

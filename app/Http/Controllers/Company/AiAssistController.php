@@ -40,7 +40,7 @@ class AiAssistController extends Controller
         if (!$result) {
             return response()->json([
                 'success' => false,
-                'message' => 'AI is unavailable right now. Please try again shortly.',
+                'message' => 'The AI assistant is currently over-capacity or improperly configured. Please verify your API keys or try again in a few moments.'
             ], 503);
         }
 

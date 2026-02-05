@@ -57,8 +57,19 @@
         <div x-data="{
             loginMethod: {{ session('otp_sent') ? "'phone'" : "'email'" }},
             otpSent: {{ session('otp_sent') ? 'true' : 'false' }},
-            phone: '{{ session('phone') ?? '' }}'
-        }" class="p-8 space-y-6">
+            phone: '{{ session('phone') ?? '' }}',
+            showPassword: false,
+            countdown: 60,
+            timer: null,
+            startTimer() {
+                this.countdown = 60;
+                if (this.timer) clearInterval(this.timer);
+                this.timer = setInterval(() => {
+                    if (this.countdown > 0) this.countdown--;
+                    else clearInterval(this.timer);
+                }, 1000);
+            }
+        }" x-init="if (otpSent) startTimer()" class="p-8 space-y-6">
             <div class="flex gap-2">
                 <button type="button"
                         @click="loginMethod = 'email'"
@@ -133,13 +144,26 @@
                         </svg>
                     </div>
                     <input
-                        type="password"
+                        :type="showPassword ? 'text' : 'password'"
                         name="password"
                         id="password"
                         required
-                        class="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 shadow-sm hover:border-indigo-400 transition-all duration-200 text-gray-900 dark:text-white bg-white dark:bg-gray-700 font-medium"
+                        class="w-full pl-10 pr-12 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 shadow-sm hover:border-indigo-400 transition-all duration-200 text-gray-900 dark:text-white bg-white dark:bg-gray-700 font-medium"
                         placeholder="Enter your password"
                     >
+                    <button
+                        type="button"
+                        @click="showPassword = !showPassword"
+                        class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-indigo-600 transition-colors"
+                    >
+                        <svg x-show="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <svg x-show="showPassword" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88L4.573 4.574m14.853 14.853L14.12 14.12M21.1 12a9.97 9.97 0 01-1.563 3.029m-5.858-.908a3 3 0 11-4.243-4.243M9.878 9.878l4.242 4.242M9.88 9.88L4.573 4.574m14.853 14.853L14.12 14.12" />
+                        </svg>
+                    </button>
                 </div>
                 @error('password')
                 <p class="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center">
@@ -178,6 +202,7 @@
 
         {{-- Phone OTP Login Form --}}
         <form x-show="loginMethod === 'phone'"
+              x-ref="phoneForm"
               action="{{ route('admin.send-otp') }}"
               method="POST" class="space-y-6"
               @submit="if (otpSent) { $el.action = '{{ route('admin.verify-otp') }}' } else { $el.action = '{{ route('admin.send-otp') }}' }">
@@ -262,10 +287,25 @@
                 <span x-show="otpSent" x-cloak>Verify & Sign In</span>
             </button>
 
-            <div x-show="otpSent" x-cloak class="text-center">
-                <a href="{{ route('admin.login') }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400">
-                    Didn't receive code? Try again
-                </a>
+            <div x-show="otpSent" x-cloak class="text-center space-y-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Didn't receive the code? 
+                    <span x-show="countdown > 0" class="font-medium text-indigo-600 dark:text-indigo-400">
+                        Resend in <span x-text="countdown"></span>s
+                    </span>
+                    <button type="button" 
+                            x-show="countdown === 0"
+                            @click="otpSent = false; $nextTick(() => $refs.phoneForm.submit())"
+                            class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors">
+                        Resend OTP
+                    </button>
+                </p>
+                
+                <button type="button" 
+                        @click="otpSent = false; phone = '';"
+                        class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+                    Change phone number
+                </button>
             </div>
         </form>
         </div>

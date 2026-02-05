@@ -13,7 +13,7 @@
                 </svg>
             </div>
             <h1 class="text-4xl md:text-5xl font-bold mb-4 gradient-text">Refund Policy</h1>
-            <p class="text-lg text-gray-600 dark:text-gray-400">Last Updated: {{ date('F d, Y') }}</p>
+            <p class="text-lg text-gray-600 dark:text-gray-200">Last Updated: {{ date('F d, Y') }}</p>
         </div>
 
         <!-- Quick Navigation -->

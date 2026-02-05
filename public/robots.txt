@@ -7,6 +7,8 @@ Disallow: /user/tickets
 Disallow: /user/orders
 Disallow: /cart
 Disallow: /checkout
+Disallow: /nova/
+Disallow: /telescope/
 
 # Sitemap Location
 Sitemap: https://9yttrybe.com/sitemap.xml

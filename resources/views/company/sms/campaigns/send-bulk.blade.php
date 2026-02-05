@@ -494,8 +494,7 @@
                                        max="100000"
                                        placeholder="e.g., 200"
                                        class="w-full px-4 py-3 border-2 border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg font-semibold"
-                                       x-bind:required="recipientType === 'use_our_contacts'"
-                                       x-bind:disabled="recipientType !== 'use_our_contacts'"
+                                       :disabled="recipientType !== 'use_our_contacts'"
                                        x-model.number="targetContactCount"
                                        @input="recipientCount = targetContactCount">
                                 <p class="mt-2 text-sm text-gray-600">

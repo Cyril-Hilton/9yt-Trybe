@@ -51,17 +51,26 @@ class EventAnalyticsController extends Controller
             ->get();
 
         // Hourly sales for chart (last 24 hours)
+        $driver = \DB::getDriverName();
+        $hourColumn = $driver === 'sqlite' ? "strftime('%H', paid_at)" : "HOUR(paid_at)";
+        
         $hourlySales = $event->orders()
             ->where('payment_status', 'completed')
             ->where('paid_at', '>=', now()->subDay())
-            ->selectRaw('HOUR(paid_at) as hour, COUNT(*) as orders')
+            ->selectRaw("$hourColumn as hour, COUNT(*) as orders")
             ->groupBy('hour')
             ->orderBy('hour')
             ->get();
 
         // Traffic sources (views by referrer)
+        $sourceColumn = $driver === 'sqlite' ? "SUBSTR(user_agent, 1, INSTR(user_agent, ' ') - 1)" : "SUBSTRING_INDEX(user_agent, ' ', 1)";
+        // Fallback for user agent without space in SQLite
+        if ($driver === 'sqlite') {
+            $sourceColumn = "CASE WHEN INSTR(user_agent, ' ') > 0 THEN $sourceColumn ELSE user_agent END";
+        }
+        
         $viewSources = $event->views()
-            ->selectRaw('SUBSTRING_INDEX(user_agent, " ", 1) as source, COUNT(*) as views')
+            ->selectRaw("$sourceColumn as source, COUNT(*) as views")
             ->groupBy('source')
             ->orderByDesc('views')
             ->limit(10)

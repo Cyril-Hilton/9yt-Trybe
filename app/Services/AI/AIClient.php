@@ -3,6 +3,7 @@
 namespace App\Services\AI;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class AIClient
@@ -123,9 +124,6 @@ class AIClient
 
     private function callOpenAI(string $system, string $user, float $temperature, int $maxTokens, array $options): ?string
     {
-        // Add a small delay to prevent 429 Rate Limits during batch runs
-        usleep(5000000); // 5 seconds
-
         $apiKey = (string) config('services.openai.api_key');
         if ($apiKey === '') {
             return null;
@@ -145,6 +143,15 @@ class AIClient
             'max_tokens' => $maxTokens,
         ];
 
+        // Check if we are in a backoff period
+        if (Cache::has('ai_backoff_openai')) {
+            return null;
+        }
+
+        // Add a randomized delay to prevent 429 Rate Limits during batch runs
+        // Base delay 5s + up to 3s jitter
+        usleep(5000000 + rand(0, 3000000));
+
         $response = Http::timeout(25)
             ->retry(1, 200)
             ->when(config('services.ai.insecure', app()->environment('local')), fn($h) => $h->withoutVerifying())
@@ -153,10 +160,15 @@ class AIClient
             ->post($endpoint, $payload);
 
         if (!$response->successful()) {
-            \Log::warning('OpenAI response failed.', [
-                'status' => $response->status(),
-                'provider' => 'openai',
-            ]);
+            if ($response->status() === 429) {
+                Cache::put('ai_backoff_openai', true, now()->addMinutes(2));
+                \Log::warning('Rate limited by OpenAI. Backing off for 2 minutes.');
+            } else {
+                \Log::warning('OpenAI response failed.', [
+                    'status' => $response->status(),
+                    'provider' => 'openai',
+                ]);
+            }
             return null;
         }
 
@@ -167,9 +179,6 @@ class AIClient
 
     private function callGemini(string $system, string $user, float $temperature, int $maxTokens, array $options): ?string
     {
-        // Add a small delay to prevent 429 Rate Limits during batch runs (Gemini Free Tier is 15 RPM = 1 request every 4s)
-        usleep(5000000); // 5 seconds
-
         $apiKey = (string) config('services.gemini.api_key');
         if ($apiKey === '') {
             return null;
@@ -199,6 +208,15 @@ class AIClient
             ],
         ];
 
+        // Check if we are in a backoff period
+        if (Cache::has('ai_backoff_gemini')) {
+            return null;
+        }
+
+        // Add a randomized delay to prevent 429 Rate Limits during batch runs
+        // Gemini Free Tier is 15 RPM = 1 request every 4s. 5-8s is safe.
+        usleep(5000000 + rand(0, 3000000));
+
         $response = Http::timeout(25)
             ->retry(1, 200)
             ->when(config('services.ai.insecure', app()->environment('local')), fn($h) => $h->withoutVerifying())
@@ -206,12 +224,17 @@ class AIClient
             ->post($endpoint, $payload);
 
         if (!$response->successful()) {
-            \Log::warning('Gemini response failed.', [
-                'status' => $response->status(),
-                'provider' => 'gemini',
-                'model' => $model,
-                'endpoint_mask' => Str::before($endpoint, '?'),
-            ]);
+            if ($response->status() === 429) {
+                Cache::put('ai_backoff_gemini', true, now()->addMinutes(2));
+                \Log::warning('Rate limited by Gemini. Backing off for 2 minutes.');
+            } else {
+                \Log::warning('Gemini response failed.', [
+                    'status' => $response->status(),
+                    'provider' => 'gemini',
+                    'model' => $model,
+                    'endpoint_mask' => Str::before($endpoint, '?'),
+                ]);
+            }
             return null;
         }
 
@@ -230,8 +253,17 @@ class AIClient
             return trim($content);
         }
 
+        $finishReason = $response->json('candidates.0.finishReason');
+        if ($finishReason === 'MAX_TOKENS' && is_string($content)) {
+            \Log::warning('Gemini reached MAX_TOKENS but returned partial content.', [
+                'model' => $model
+            ]);
+            return trim($content);
+        }
+
         \Log::debug('Gemini returned success but no text content found.', [
-            'raw_body' => Str::limit($response->body(), 1000)
+            'raw_body' => Str::limit($response->body(), 1000),
+            'finish_reason' => $finishReason
         ]);
 
         return null;

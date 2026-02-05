@@ -229,7 +229,7 @@ class ShopCheckoutController extends Controller
                     'status' => 'processing',
                 ]);
 
-                if ($order->user_id && (!Auth::check() || Auth::id() !== $order->user_id)) {
+                if ($order->user_id && (!Auth::check() || Auth::id() != $order->user_id)) {
                     Auth::loginUsingId($order->user_id);
                     $request->session()->regenerate();
                 }
@@ -320,7 +320,7 @@ class ShopCheckoutController extends Controller
                 ])->with('error', 'Please sign in to view your order.');
             }
 
-            if ($order->user_id !== $userId) {
+            if ($order->user_id != $userId) {
                 auth()->logout();
                 return redirect()->route('user.login', [
                     'redirect' => route('shop.order.confirmation', $order->order_number),

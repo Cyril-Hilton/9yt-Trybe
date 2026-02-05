@@ -13,7 +13,7 @@
                 </svg>
             </div>
             <h1 class="text-4xl md:text-5xl font-bold mb-4 gradient-text">Terms and Conditions</h1>
-            <p class="text-lg text-gray-600 dark:text-gray-400">Last Updated: {{ date('F d, Y') }}</p>
+            <p class="text-lg text-gray-600 dark:text-gray-200">Last Updated: {{ date('F d, Y') }}</p>
         </div>
 
         <!-- Quick Navigation -->
@@ -25,15 +25,15 @@
                 Quick Navigation
             </h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                <a href="#acceptance" class="text-blue-600 dark:text-blue-400 hover:underline">→ Acceptance of Terms</a>
-                <a href="#registration" class="text-blue-600 dark:text-blue-400 hover:underline">→ Registration</a>
-                <a href="#conduct" class="text-blue-600 dark:text-blue-400 hover:underline">→ User Conduct</a>
-                <a href="#organizers" class="text-blue-600 dark:text-blue-400 hover:underline">→ Event Organizers</a>
-                <a href="#ticketing" class="text-blue-600 dark:text-blue-400 hover:underline">→ Ticketing</a>
-                <a href="#ecommerce" class="text-blue-600 dark:text-blue-400 hover:underline">→ E-Commerce</a>
-                <a href="#bulksms" class="text-blue-600 dark:text-blue-400 hover:underline">→ Bulk SMS</a>
-                <a href="#intellectual" class="text-blue-600 dark:text-blue-400 hover:underline">→ Intellectual Property</a>
-                <a href="#liability" class="text-blue-600 dark:text-blue-400 hover:underline">→ Liability</a>
+                <a href="#acceptance" class="text-blue-600 dark:text-cyan-400 font-medium hover:underline">→ Acceptance of Terms</a>
+                <a href="#registration" class="text-blue-600 dark:text-cyan-400 font-medium hover:underline">→ Registration</a>
+                <a href="#conduct" class="text-blue-600 dark:text-cyan-400 font-medium hover:underline">→ User Conduct</a>
+                <a href="#organizers" class="text-blue-600 dark:text-cyan-400 font-medium hover:underline">→ Event Organizers</a>
+                <a href="#ticketing" class="text-blue-600 dark:text-cyan-400 font-medium hover:underline">→ Ticketing</a>
+                <a href="#ecommerce" class="text-blue-600 dark:text-cyan-400 font-medium hover:underline">→ E-Commerce</a>
+                <a href="#bulksms" class="text-blue-600 dark:text-cyan-400 font-medium hover:underline">→ Bulk SMS</a>
+                <a href="#intellectual" class="text-blue-600 dark:text-cyan-400 font-medium hover:underline">→ Intellectual Property</a>
+                <a href="#liability" class="text-blue-600 dark:text-cyan-400 font-medium hover:underline">→ Liability</a>
             </div>
         </div>
 

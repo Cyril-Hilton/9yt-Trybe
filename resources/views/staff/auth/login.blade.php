@@ -50,7 +50,7 @@
             transform: translateY(-2px) scale(1.02);
         }
     </style>
-    <link rel="stylesheet" href="{{ asset('css/glassmorphism.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/css/intlTelInput.css">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
@@ -118,7 +118,20 @@
             </div>
 
             {{-- Login Card --}}
-            <div class="glass-card" x-data="{ otpSent: {{ session('otp_sent') ? 'true' : 'false' }}, phone: '{{ session('phone') ?? '' }}' }">
+            <div class="glass-card" x-data="{ 
+                otpSent: {{ session('otp_sent') ? 'true' : 'false' }}, 
+                phone: '{{ session('phone') ?? '' }}',
+                countdown: 60,
+                timer: null,
+                startTimer() {
+                    this.countdown = 60;
+                    if (this.timer) clearInterval(this.timer);
+                    this.timer = setInterval(() => {
+                        if (this.countdown > 0) this.countdown--;
+                        else clearInterval(this.timer);
+                    }, 1000);
+                }
+            }" x-init="if (otpSent) startTimer()">
 
                 {{-- Messages --}}
                 @if(session('message'))
@@ -135,18 +148,21 @@
 
                 {{-- Phone Number Step --}}
                 <div x-show="!otpSent">
-                    <form action="{{ route('staff.send-otp') }}" method="POST" class="space-y-4">
+                    <form x-ref="phoneForm" action="{{ route('staff.send-otp') }}" method="POST" class="space-y-4">
                         @csrf
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Phone Number
                             </label>
-                            <input type="tel"
-                                   name="phone"
-                                   x-model="phone"
-                                   required
-                                   placeholder="+1234567890"
-                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 text-lg">
+                            <div class="relative">
+                                <input type="tel"
+                                       id="phone-otp"
+                                       name="phone"
+                                       x-model="phone"
+                                       required
+                                       class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 text-lg">
+                                <input type="hidden" name="full_phone" id="full_phone">
+                            </div>
                         </div>
 
                         <button type="submit" class="w-full glass-btn-primary py-3">
@@ -189,10 +205,25 @@
 
                         <button type="submit" class="w-full glass-btn-primary py-3">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                             </svg>
                             Verify & Login
                         </button>
+
+                        <div class="text-center">
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                Didn't receive the code? 
+                                <span x-show="countdown > 0" class="font-medium text-cyan-600 dark:text-cyan-400">
+                                    Resend in <span x-text="countdown"></span>s
+                                </span>
+                                <button type="button" 
+                                        x-show="countdown === 0"
+                                        @click="otpSent = false; $nextTick(() => $refs.phoneForm.submit())"
+                                        class="font-medium text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 transition-colors">
+                                    Resend OTP
+                                </button>
+                            </p>
+                        </div>
 
                         <button type="button"
                                 @click="otpSent = false"
@@ -219,7 +250,36 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/js/intlTelInput.min.js"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const phoneInput = document.querySelector("#phone-otp");
+            const fullPhoneInput = document.querySelector("#full_phone");
+            
+            if (phoneInput) {
+                const iti = window.intlTelInput(phoneInput, {
+                    initialCountry: "gh",
+                    separateDialCode: true,
+                    utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/js/utils.js",
+                });
+
+                phoneInput.addEventListener('change', function() {
+                    fullPhoneInput.value = iti.getNumber();
+                });
+                phoneInput.addEventListener('keyup', function() {
+                    fullPhoneInput.value = iti.getNumber();
+                });
+                
+                // Form submission
+                const form = phoneInput.closest('form');
+                if (form) {
+                    form.addEventListener('submit', function() {
+                        fullPhoneInput.value = iti.getNumber();
+                    });
+                }
+            }
+        });
+
         // Hide loader after page loads - wait for Alpine to be fully ready
         window.addEventListener('load', function() {
             // Give Alpine time to fully initialize

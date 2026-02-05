@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 
 class GenerateAiBlogPosts extends Command
 {
-    protected $signature = 'blog:generate-ai {--count=} {--auto-publish} {--type=}';
+    protected $signature = 'ai:generate-blog-posts {--count=} {--auto-publish} {--type=}';
 
     protected $description = 'Generate blog posts using AI (how-to and whats-on).';
 

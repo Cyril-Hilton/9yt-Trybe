@@ -44,6 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth.company' => \App\Http\Middleware\CompanyAuth::class,
             'auth.admin' => \App\Http\Middleware\AdminAuth::class,
+            'cache.response' => \App\Http\Middleware\CacheResponse::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

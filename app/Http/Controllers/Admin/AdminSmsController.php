@@ -112,7 +112,7 @@ class AdminSmsController extends Controller
 
         // Get recent manual credit additions
         $recentCredits = \App\Models\SmsTransaction::where('type', 'manual_credit')
-            ->with('company:id,name,email')
+            ->with('owner')
             ->latest()
             ->take(10)
             ->get();

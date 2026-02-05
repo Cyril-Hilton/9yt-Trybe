@@ -20,7 +20,7 @@ class EventController extends Controller
 {
     public function home(Request $request, NewsService $newsService, AiContentService $aiContent)
     {
-        $query = Event::approved()->with('company');
+        $query = Event::approved()->with(['company', 'tickets', 'categories']);
 
         // Filter by region
         if ($request->filled('region')) {
@@ -44,33 +44,24 @@ class EventController extends Controller
             }
         }
 
-        // Get upcoming events ordered by date
+        // Get upcoming events ordered by date - with eager loading
         $events = $query->upcoming()
             ->orderBy('start_date', 'asc')
             ->limit(16)
             ->get();
 
-        // 16 regions in Ghana (aligned with front-end location mapping)
+        // 16 regions in Ghana
         $regions = [
-            'Greater Accra',
-            'Ashanti',
-            'Central',
-            'Western',
-            'Western North',
-            'Eastern',
-            'Volta',
-            'Oti',
-            'Northern',
-            'Savannah',
-            'North East',
-            'Upper East',
-            'Upper West',
-            'Bono',
-            'Bono East',
-            'Ahafo',
+            'Greater Accra', 'Ashanti', 'Central', 'Western', 'Western North',
+            'Eastern', 'Volta', 'Oti', 'Northern', 'Savannah', 'North East',
+            'Upper East', 'Upper West', 'Bono', 'Bono East', 'Ahafo',
         ];
 
+        // Optimize news fetching - use cache only, don't trigger slow external calls synchronously
         $newsArticles = $newsService->getArticles();
+        
+        // Non-blocking digest: if cache is empty, we return null immediately instead of waiting for AI
+        // This relies on the scheduled task to warm the cache.
         $newsDigest = $aiContent->generateNewsDigest($newsArticles, null);
 
         return view('welcome', compact('events', 'regions', 'newsArticles', 'newsDigest'));
@@ -135,11 +126,7 @@ class EventController extends Controller
             if ($category) {
                 $query->inCategory($category->slug);
             } else {
-                $invalidCategory = true;
-                $category = Category::make([
-                    'slug' => $categorySlug,
-                    'name' => ucwords(str_replace('-', ' ', $categorySlug)),
-                ]);
+                abort(404);
             }
         }
 

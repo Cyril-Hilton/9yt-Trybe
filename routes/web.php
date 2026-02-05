@@ -42,7 +42,9 @@ Route::prefix('auth')->name('auth.social.')->group(function () {
 });
 
 // Home
-Route::get('/', [App\Http\Controllers\Public\EventController::class, 'home'])->name('home');
+Route::get('/', [App\Http\Controllers\Public\EventController::class, 'home'])
+    ->name('home')
+    ->middleware('cache.response:600'); // 10 minutes cache
 
 // SEO - Sitemap for search engines
 Route::get('/sitemap.xml', [App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
@@ -52,7 +54,9 @@ Route::get('/search', [App\Http\Controllers\SearchController::class, 'index'])->
 Route::get('/search/quick', [App\Http\Controllers\SearchController::class, 'quickSearch'])->name('search.quick');
 
 // News (Fashion, Lifestyle, Entertainment)
-Route::get('/news', [App\Http\Controllers\Public\NewsController::class, 'index'])->name('news.index');
+Route::get('/news', [App\Http\Controllers\Public\NewsController::class, 'index'])
+    ->name('news.index')
+    ->middleware('cache.response:1800'); // 30 minutes cache
 Route::get('/api/news', [App\Http\Controllers\Public\NewsController::class, 'index'])->name('api.news.index');
 
 // Blog (How-tos, What's on)
@@ -62,9 +66,9 @@ Route::get('/blog/rss.xml', [BlogController::class, 'rss'])->name('blog.rss');
 Route::get('/rss.xml', [BlogController::class, 'rss'])->name('rss');
 
 // Programmatic SEO landings
-Route::get('/today', [SeoLandingController::class, 'today'])->name('seo.today');
-Route::get('/this-weekend', [SeoLandingController::class, 'weekend'])->name('seo.weekend');
-Route::get('/locations/{region}', [SeoLandingController::class, 'region'])->name('seo.region');
+Route::get('/today', [SeoLandingController::class, 'today'])->name('seo.today')->middleware('cache.response:300');
+Route::get('/this-weekend', [SeoLandingController::class, 'weekend'])->name('seo.weekend')->middleware('cache.response:300');
+Route::get('/locations/{region}', [SeoLandingController::class, 'region'])->name('seo.region')->middleware('cache.response:1800');
 
 // Chat Routes (Available for all users - guest, authenticated, company)
 Route::post('/chat/send', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.send');
@@ -357,6 +361,9 @@ Route::middleware('auth')->group(function () {
     })->middleware('signed')->name('verification.verify');
 
     Route::post('/user/resend-verification', function (Illuminate\Http\Request $request) {
+        if ($request->user()->hasVerifiedEmail()) {
+            return redirect()->route('user.dashboard');
+        }
         $request->user()->sendEmailVerificationNotification();
         return back()->with('success', 'Verification link sent!');
     })->middleware('throttle:6,1')->name('verification.send');

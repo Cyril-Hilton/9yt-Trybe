@@ -320,8 +320,9 @@ class SmsCampaignController extends Controller
 
         // Get SMS credit balance
         $creditBalance = $this->smsService->getCreditBalance($company);
+        $creditBalanceValue = $creditBalance->balance ?? 0;
 
-        return view('company.sms.campaigns.resend', compact('campaign', 'recipientsText', 'senderIds', 'creditBalance'));
+        return view('company.sms.campaigns.resend', compact('campaign', 'recipientsText', 'senderIds', 'creditBalance', 'creditBalanceValue'));
     }
 
     /**
