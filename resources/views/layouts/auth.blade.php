@@ -89,7 +89,7 @@
     </script>
 
     <!-- Minimal Navigation Header with Glass Effect -->
-    <nav class="glass-effect border-b-2 border-white/30 dark:border-gray-700/50 shadow-2xl transition-colors duration-300">
+    <nav class="fixed top-0 w-full z-50 glass-effect border-b-2 border-white/30 dark:border-gray-700/50 shadow-2xl transition-colors duration-300">
         <div class="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16 sm:h-20">
                 <!-- Logo -->
@@ -132,7 +132,7 @@
     </nav>
 
     <!-- Main Content Area -->
-    <main class="min-h-[calc(100vh-80px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <main class="min-h-screen pt-20 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         @yield('content')
     </main>
 

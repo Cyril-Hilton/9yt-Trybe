@@ -4,13 +4,8 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 // Register command manually to ensure visibility
-Artisan::command('ai:generate-blog-posts {--count=} {--auto-publish} {--type=}', function () {
-    $this->call(App\Console\Commands\GenerateAiBlogPosts::class, [
-        '--count' => $this->option('count'),
-        '--auto-publish' => $this->option('auto-publish'),
-        '--type' => $this->option('type'),
-    ]);
-})->describe('Generate blog posts using AI');
+// Command is auto-discovered from App\Console\Commands\GenerateAiBlogPosts
+// Artisan::command('ai:generate-blog-posts', function () {})->describe('...');
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
