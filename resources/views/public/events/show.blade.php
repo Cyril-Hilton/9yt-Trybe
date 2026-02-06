@@ -41,6 +41,11 @@ $schemaData = [
         'name' => $event->company->name ?? '9yt !Trybe',
         'url' => $event->company ? url('/organizers/' . $event->company->slug) : url('/'),
     ],
+    'performer' => [
+        '@type' => 'Organization',
+        'name' => $event->company->name ?? '9yt !Trybe',
+        'url' => $event->company ? url('/organizers/' . $event->company->slug) : url('/'),
+    ],
 ];
 
 if ($event->start_date) {
