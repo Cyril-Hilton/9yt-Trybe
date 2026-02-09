@@ -184,7 +184,7 @@ class SitemapController extends Controller
     private function buildUrl($path, $lastmod = null, $changefreq = 'weekly', $priority = '0.5', $image = null)
     {
         $url = '<url>';
-        $url .= '<loc>' . htmlspecialchars(url($path), ENT_XML1, 'UTF-8') . '</loc>';
+        $url .= '<loc>' . e(url($path)) . '</loc>';
 
         if ($lastmod) {
             $url .= '<lastmod>' . $lastmod->toAtomString() . '</lastmod>';
@@ -195,7 +195,7 @@ class SitemapController extends Controller
 
         if ($image) {
             $url .= '<image:image>';
-            $url .= '<image:loc>' . htmlspecialchars($image, ENT_XML1, 'UTF-8') . '</image:loc>';
+            $url .= '<image:loc>' . e($image) . '</image:loc>';
             $url .= '</image:image>';
         }
 
