@@ -19,10 +19,9 @@ class SitemapController extends Controller
      */
     public function index()
     {
-        $sitemap = '<?xml version="1.0" encoding="UTF-8"?>';
-        $sitemap .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"';
-        $sitemap .= ' xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">';
-
+        // Use array to build sitemap for better performance
+        $urls = [];
+        
         // Static public pages (only URLs that exist and should be indexed)
         $staticPages = [
             ['/', now(), 'daily', '1.0'],
@@ -49,7 +48,7 @@ class SitemapController extends Controller
         ];
 
         foreach ($staticPages as [$path, $lastmod, $changefreq, $priority]) {
-            $sitemap .= $this->addUrl($path, $lastmod, $changefreq, $priority);
+            $urls[] = $this->buildUrl($path, $lastmod, $changefreq, $priority);
         }
 
         // Events
@@ -62,7 +61,7 @@ class SitemapController extends Controller
         foreach ($events as $event) {
             $url = "/events/{$event->slug}";
             $image = $event->flier_path ? $event->flier_url : null;
-            $sitemap .= $this->addUrl($url, $event->updated_at, 'weekly', '0.8', $image);
+            $urls[] = $this->buildUrl($url, $event->updated_at, 'weekly', '0.8', $image);
         }
 
         // Region landing pages
@@ -75,7 +74,7 @@ class SitemapController extends Controller
         foreach ($regions as $region) {
             $slug = Str::slug($region);
             $url = "/locations/{$slug}";
-            $sitemap .= $this->addUrl($url, now(), 'weekly', '0.6');
+            $urls[] = $this->buildUrl($url, now(), 'weekly', '0.6');
         }
 
         // Blog articles
@@ -89,7 +88,7 @@ class SitemapController extends Controller
         foreach ($blogArticles as $article) {
             $url = "/blog/{$article->slug}";
             $image = $article->image_path ? $article->image_url : null;
-            $sitemap .= $this->addUrl($url, $article->updated_at, 'weekly', '0.7', $image);
+            $urls[] = $this->buildUrl($url, $article->updated_at, 'weekly', '0.7', $image);
         }
 
         // Categories
@@ -101,7 +100,7 @@ class SitemapController extends Controller
 
         foreach ($categories as $category) {
             $url = "/categories/{$category->slug}";
-            $sitemap .= $this->addUrl($url, $category->updated_at, 'weekly', '0.6');
+            $urls[] = $this->buildUrl($url, $category->updated_at, 'weekly', '0.6');
         }
 
         // Organizers
@@ -115,7 +114,7 @@ class SitemapController extends Controller
 
         foreach ($organizers as $organizer) {
             $url = "/organizers/{$organizer->slug}";
-            $sitemap .= $this->addUrl($url, $organizer->updated_at, 'weekly', '0.6');
+            $urls[] = $this->buildUrl($url, $organizer->updated_at, 'weekly', '0.6');
         }
 
         // Conferences (public registration)
@@ -127,7 +126,7 @@ class SitemapController extends Controller
 
         foreach ($conferences as $conference) {
             $url = "/register/{$conference->slug}";
-            $sitemap .= $this->addUrl($url, $conference->updated_at, 'weekly', '0.7');
+            $urls[] = $this->buildUrl($url, $conference->updated_at, 'weekly', '0.7');
         }
 
         // Surveys
@@ -139,7 +138,7 @@ class SitemapController extends Controller
 
         foreach ($surveys as $survey) {
             $url = "/survey/{$survey->slug}";
-            $sitemap .= $this->addUrl($url, $survey->updated_at, 'weekly', '0.5');
+            $urls[] = $this->buildUrl($url, $survey->updated_at, 'weekly', '0.5');
         }
 
         // Polls
@@ -151,7 +150,7 @@ class SitemapController extends Controller
 
         foreach ($polls as $poll) {
             $url = "/polls/{$poll->slug}";
-            $sitemap .= $this->addUrl($url, $poll->updated_at, 'weekly', '0.6');
+            $urls[] = $this->buildUrl($url, $poll->updated_at, 'weekly', '0.6');
         }
 
         // Shop products
@@ -165,22 +164,27 @@ class SitemapController extends Controller
         foreach ($products as $product) {
             $url = "/shop/{$product->slug}";
             $image = $product->image_path ? asset('storage/' . $product->image_path) : null;
-            $sitemap .= $this->addUrl($url, $product->updated_at, 'weekly', '0.6', $image);
+            $urls[] = $this->buildUrl($url, $product->updated_at, 'weekly', '0.6', $image);
         }
 
-        $sitemap .= '</urlset>';
+        // Build complete sitemap XML
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"';
+        $xml .= ' xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' . "\n";
+        $xml .= implode("\n", $urls);
+        $xml .= "\n" . '</urlset>';
 
-        return response($sitemap, 200)
-            ->header('Content-Type', 'application/xml');
+        return response($xml, 200)
+            ->header('Content-Type', 'application/xml; charset=UTF-8');
     }
 
     /**
-     * Helper method to add URL to sitemap
+     * Helper method to build URL entry for sitemap
      */
-    private function addUrl($path, $lastmod = null, $changefreq = 'weekly', $priority = '0.5', $image = null)
+    private function buildUrl($path, $lastmod = null, $changefreq = 'weekly', $priority = '0.5', $image = null)
     {
         $url = '<url>';
-        $url .= '<loc>' . url($path) . '</loc>';
+        $url .= '<loc>' . htmlspecialchars(url($path), ENT_XML1, 'UTF-8') . '</loc>';
 
         if ($lastmod) {
             $url .= '<lastmod>' . $lastmod->toAtomString() . '</lastmod>';
@@ -191,7 +195,7 @@ class SitemapController extends Controller
 
         if ($image) {
             $url .= '<image:image>';
-            $url .= '<image:loc>' . $image . '</image:loc>';
+            $url .= '<image:loc>' . htmlspecialchars($image, ENT_XML1, 'UTF-8') . '</image:loc>';
             $url .= '</image:image>';
         }
 
