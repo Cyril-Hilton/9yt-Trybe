@@ -60,6 +60,26 @@
         .dark .iti__country:hover {
             background-color: #374151 !important;
         }
+
+        /* Autocomplete Styles for Dark Mode - Fixes white background on autofill */
+        .dark input:-webkit-autofill,
+        .dark input:-webkit-autofill:hover,
+        .dark input:-webkit-autofill:focus,
+        .dark input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #1f2937 inset !important; /* bg-gray-800 */
+            -webkit-text-fill-color: white !important;
+            caret-color: white !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        /* Autocomplete Styles for Light Mode */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px white inset !important;
+            -webkit-text-fill-color: #111827 !important; /* text-gray-900 */
+        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/css/intlTelInput.css">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
