@@ -72,18 +72,18 @@ class ProductionContentSeeder extends Seeder
     {
         $this->command->info('Seeding gallery images...');
 
-        // Note: You'll need to add actual image URLs or use placeholders
+        // Note: Using logo as placeholder - replace with actual gallery images
         $galleryImages = [
             [
                 'title' => '9yt !Trybe Events',
-                'image_url' => asset('ui/logo/9yt-trybe-logo-light.png'), // Placeholder
+                'image_path' => 'ui/logo/9yt-trybe-logo-light.png', // Relative path
                 'category' => 'new',
                 'is_active' => true,
                 'order' => 1,
             ],
             [
                 'title' => 'Community Gathering',
-                'image_url' => asset('ui/logo/9yt-trybe-logo-dark.png'), // Placeholder
+                'image_path' => 'ui/logo/9yt-trybe-logo-dark.png', // Relative path
                 'category' => 'new',
                 'is_active' => true,
                 'order' => 2,
@@ -101,7 +101,7 @@ class ProductionContentSeeder extends Seeder
         $magazineImages = [
             [
                 'title' => '!Trybe Magazine Cover',
-                'image_url' => asset('ui/logo/9yt-trybe-logo-light.png'), // Placeholder
+                'image_path' => 'ui/logo/9yt-trybe-logo-light.png', // Relative path
                 'is_active' => true,
                 'order' => 1,
             ],
@@ -130,7 +130,7 @@ class ProductionContentSeeder extends Seeder
                 'stock' => 100,
                 'status' => 'approved',
                 'is_active' => true,
-                'image_url' => asset('ui/logo/9yt-trybe-logo-light.png'), // Placeholder
+                'image_path' => 'ui/logo/9yt-trybe-logo-light.png', // Relative path
             ],
             [
                 'name' => '!Trybe Cap',
@@ -140,7 +140,7 @@ class ProductionContentSeeder extends Seeder
                 'stock' => 50,
                 'status' => 'approved',
                 'is_active' => true,
-                'image_url' => asset('ui/logo/9yt-trybe-logo-dark.png'), // Placeholder
+                'image_path' => 'ui/logo/9yt-trybe-logo-dark.png', // Relative path
             ],
         ];
 
