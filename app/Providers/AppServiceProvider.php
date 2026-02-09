@@ -60,7 +60,12 @@ class AppServiceProvider extends ServiceProvider
 
         if ($this->app->environment('production') || str_contains(request()->getHost(), '9yttrybe.com')) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
-            \Illuminate\Support\Facades\URL::forceRootUrl(config('app.url'));
+            
+            // Force the correct production URL
+            // This fixes issues where the server's .env might still have APP_URL=http://localhost
+            $prodUrl = 'https://9yttrybe.com';
+            \Illuminate\Support\Facades\URL::forceRootUrl($prodUrl);
+            config(['app.url' => $prodUrl]);
         }
     }
 }
