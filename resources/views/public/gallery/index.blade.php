@@ -2,6 +2,11 @@
 
 @section('title', 'Gallery')
 
+@if(isset($isEmpty) && $isEmpty)
+@section('meta_robots', 'noindex, follow')
+@endif
+
+
 @section('content')
 <div x-data="{ activeTab: 'new' }" class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

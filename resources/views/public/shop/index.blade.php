@@ -2,6 +2,11 @@
 
 @section('title', 'Shop - 9yt !Trybe Merch')
 
+@if(isset($isEmpty) && $isEmpty)
+@section('meta_robots', 'noindex, follow')
+@endif
+
+
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 dark:from-gray-900 dark:via-slate-900/20 dark:to-slate-800/20 py-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -57,12 +57,29 @@ class EventController extends Controller
             'Upper East', 'Upper West', 'Bono', 'Bono East', 'Ahafo',
         ];
 
-        // Optimize news fetching - use cache only, don't trigger slow external calls synchronously
-        $newsArticles = $newsService->getArticles();
+        // Graceful degradation for external services - prevent 5xx errors
+        $newsArticles = [];
+        try {
+            $newsArticles = $newsService->getArticles();
+        } catch (\Throwable $e) {
+            // Log error but don't crash the page
+            \Log::error('NewsService failed on homepage', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
         
-        // Non-blocking digest: if cache is empty, we return null immediately instead of waiting for AI
-        // This relies on the scheduled task to warm the cache.
-        $newsDigest = $aiContent->generateNewsDigest($newsArticles, null);
+        // Non-blocking digest: if cache is empty or AI fails, we return null gracefully
+        $newsDigest = null;
+        try {
+            $newsDigest = $aiContent->generateNewsDigest($newsArticles, null);
+        } catch (\Throwable $e) {
+            // Log error but don't crash the page
+            \Log::error('AiContentService failed on homepage', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
 
         return view('welcome', compact('events', 'regions', 'newsArticles', 'newsDigest'));
     }

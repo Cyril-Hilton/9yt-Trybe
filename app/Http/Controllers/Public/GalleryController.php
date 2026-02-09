@@ -24,6 +24,9 @@ class GalleryController extends Controller
             ->orderBy('order')
             ->get();
 
-        return view('public.gallery.index', compact('newEvents', 'oldEvents', 'magazineImages'));
+        // Flag for SEO - prevent indexing empty pages
+        $isEmpty = $newEvents->isEmpty() && $oldEvents->isEmpty() && $magazineImages->isEmpty();
+
+        return view('public.gallery.index', compact('newEvents', 'oldEvents', 'magazineImages', 'isEmpty'));
     }
 }

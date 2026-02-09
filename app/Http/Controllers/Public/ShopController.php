@@ -18,7 +18,10 @@ class ShopController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(12);
 
-        return view('public.shop.index', compact('products'));
+        // Flag for SEO - prevent indexing empty pages
+        $isEmpty = $products->isEmpty();
+
+        return view('public.shop.index', compact('products', 'isEmpty'));
     }
 
     public function show(Request $request, ShopProduct $product)

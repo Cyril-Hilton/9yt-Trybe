@@ -15,7 +15,10 @@ class TeamController extends Controller
             ->get()
             ->groupBy('role');
 
-        return view('public.team.index', compact('teamMembers'));
+        // Flag for SEO - prevent indexing empty pages
+        $isEmpty = $teamMembers->isEmpty();
+
+        return view('public.team.index', compact('teamMembers', 'isEmpty'));
     }
 
     public function store(Request $request)
