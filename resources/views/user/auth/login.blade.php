@@ -3,7 +3,7 @@
 @section('title', 'Event Attendee Login')
 
 @section('content')
-<div class="max-w-md w-full glass-effect p-8 rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-[1.01]">
+<div class="max-w-md w-full glass-effect p-6 sm:p-8 rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-[1.01]">
     <div class="text-center mb-8">
         <div class="inline-block bg-gradient-to-br from-purple-500 to-pink-600 p-3 rounded-2xl shadow-lg mb-4 transform rotate-3 hover:rotate-6 transition-transform">
             <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
