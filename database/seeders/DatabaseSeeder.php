@@ -15,8 +15,7 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             SmsPlansSeeder::class,
             AdminAccountSeeder::class,
-            TestSeeder::class,
-            HumanSeeder::class,
+            ProductionContentSeeder::class,
         ]);
     }
 }
