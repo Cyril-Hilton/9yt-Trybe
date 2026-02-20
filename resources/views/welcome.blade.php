@@ -1969,10 +1969,10 @@
 
                         <div class="grid grid-cols-1 gap-4">
                             <!-- Uber -->
-                            <a :href="getRideLink('uber')" target="_blank" @click="closeBookingPicker()"
-                               class="flex items-center justify-between p-4 rounded-2xl bg-black text-white hover:scale-[1.02] transition-transform shadow-lg">
+                            <button @click.prevent="let url = getRideLink('uber'); if(url !== '#') { window.open(url, '_blank'); } setTimeout(() => closeBookingPicker(), 300);"
+                               class="flex items-center justify-between p-4 rounded-2xl bg-black text-white hover:scale-[1.02] transition-transform shadow-lg cursor-pointer w-full">
                                 <div class="flex items-center gap-3">
-                                    <span class="w-10 h-10 flex items-center justify-center p-0 overflow-hidden">
+                                    <span class="w-10 h-10 flex items-center justify-center p-0 overflow-hidden rounded-lg">
                                         <img src="{{ asset('assets/images/rides/uber.png') }}" alt="Uber" class="w-full h-full object-cover">
                                     </span>
                                     <span class="font-bold text-white">Uber</span>
@@ -1980,11 +1980,11 @@
                                 <svg class="w-5 h-5 opacity-50 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                 </svg>
-                            </a>
+                            </button>
 
                             <!-- Bolt -->
-                            <a :href="getRideLink('bolt')" target="_blank" @click="closeBookingPicker()"
-                               class="flex items-center justify-between p-4 rounded-2xl bg-[#34d186] text-white hover:scale-[1.02] transition-transform shadow-lg">
+                            <button @click.prevent="let url = getRideLink('bolt'); if(url !== '#') { window.open(url, '_blank'); } setTimeout(() => closeBookingPicker(), 300);"
+                               class="flex items-center justify-between p-4 rounded-2xl bg-[#34d186] text-white hover:scale-[1.02] transition-transform shadow-lg cursor-pointer w-full">
                                 <div class="flex items-center gap-3">
                                     <span class="w-10 h-10 flex items-center justify-center p-0 overflow-hidden rounded-lg">
                                         <img src="{{ asset('assets/images/rides/bolt.png') }}" alt="Bolt" class="w-full h-full object-cover">
@@ -1994,13 +1994,13 @@
                                 <svg class="w-5 h-5 opacity-50 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                 </svg>
-                            </a>
+                            </button>
 
                             <!-- Yango -->
-                            <a :href="getRideLink('yango')" target="_blank" @click="closeBookingPicker()"
-                               class="flex items-center justify-between p-4 rounded-2xl bg-[#ff0000] text-white hover:scale-[1.02] transition-transform shadow-lg">
+                            <button @click.prevent="let url = getRideLink('yango'); if(url !== '#') { window.open(url, '_blank'); } setTimeout(() => closeBookingPicker(), 300);"
+                               class="flex items-center justify-between p-4 rounded-2xl bg-[#ff0000] text-white hover:scale-[1.02] transition-transform shadow-lg cursor-pointer w-full">
                                 <div class="flex items-center gap-3">
-                                    <span class="w-10 h-10 flex items-center justify-center p-0 overflow-hidden">
+                                    <span class="w-10 h-10 flex items-center justify-center p-0 overflow-hidden rounded-lg">
                                         <img src="{{ asset('assets/images/rides/yango.png') }}" alt="Yango" class="w-full h-full object-cover">
                                     </span>
                                     <span class="font-bold text-white">Yango</span>
@@ -2008,7 +2008,7 @@
                                 <svg class="w-5 h-5 opacity-50 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                 </svg>
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>
