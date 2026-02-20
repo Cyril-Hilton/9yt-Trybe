@@ -134,7 +134,7 @@ class CompanyAuthController extends Controller
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
-            'password' => ['required', 'confirmed', Password::defaults()],
+            'password' => ['required', 'confirmed', PasswordRule::defaults()],
         ]);
 
         $status = Password::broker('companies')->reset(
