@@ -72,12 +72,13 @@ class EventController extends Controller
                 $validated['banner_image'] = $request->file('banner_image')->store('events/banners', 'public');
             }
 
-            // Determine status based on action
+            // Determine status based on action - organizers submit for admin approval
             $status = $request->input('action') === 'publish' ? 'pending' : 'draft';
 
             // Create event
             $event = $company->events()->create(array_merge($validated, [
                 'status' => $status,
+                'region' => $validated['region'] ?? 'Greater Accra',
             ]));
 
             // Sync categories
@@ -385,6 +386,7 @@ class EventController extends Controller
 
         $event->update([
             'status' => 'pending',
+            'region' => $event->region ?: 'Greater Accra',
         ]);
 
         return back()->with('success', 'Event submitted for approval!');

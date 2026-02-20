@@ -22,9 +22,13 @@ class EventController extends Controller
     {
         $query = Event::approved()->with(['company', 'tickets', 'categories']);
 
-        // Filter by region
+        // Filter by region - if provided in request
         if ($request->filled('region')) {
-            $query->where('region', $request->input('region'));
+            $query->where(function($q) use ($request) {
+                $q->where('region', $request->input('region'))
+                  ->orWhere('region', '')
+                  ->orWhereNull('region');
+            });
         }
 
         // Filter by date range
