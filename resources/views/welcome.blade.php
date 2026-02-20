@@ -2242,7 +2242,7 @@
                         case 'uber':
                             return `https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}&dropoff[nickname]=${name}`;
                         case 'bolt':
-                            return `https://bolt.eu/ride/?destination_lat=${lat}&destination_lng=${lng}`;
+                            return `https://bolt.eu/ride?destination_lat=${lat}&destination_lng=${lng}`;
                         case 'yango':
                             return `https://yango.go.link/route?end-lat=${lat}&end-lon=${lng}`;
                         default:
