@@ -164,6 +164,31 @@ echo json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     },
     totalAmount: 0,
     checkoutError: '',
+    showBookingPicker: false,
+    openBookingPicker() {
+        this.showBookingPicker = true;
+        document.body.classList.add('overflow-hidden');
+    },
+    closeBookingPicker() {
+        this.showBookingPicker = false;
+        document.body.classList.remove('overflow-hidden');
+    },
+    getRideLink(app) {
+        const lat = {{ $event->venue_latitude ?? 0 }};
+        const lng = {{ $event->venue_longitude ?? 0 }};
+        const name = encodeURIComponent('{{ $event->title }} at {{ $event->venue_name }}');
+        
+        switch(app) {
+            case 'uber':
+                return `https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}&dropoff[nickname]=${name}`;
+            case 'bolt':
+                return `https://bolt.eu/ride/?destination_lat=${lat}&destination_lng=${lng}`;
+            case 'yango':
+                return `https://yango.go.link/route?end-lat=${lat}&end-lon=${lng}`;
+            default:
+                return '#';
+        }
+    },
     getTotalTickets() {
         return Object.values(this.selectedTickets).reduce((sum, qty) => sum + parseInt(qty || 0), 0);
     },
@@ -377,6 +402,18 @@ echo json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                             <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ $event->venue_name }}</p>
                             @if($event->venue_address)
                             <p class="text-gray-600 dark:text-gray-400 mb-4">{{ $event->venue_address }}</p>
+
+                            <!-- Book a Ride Action -->
+                            <div class="mb-6">
+                                <button @click="openBookingPicker()" 
+                                        class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-xl font-bold shadow-lg hover-lift transition-all">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                    </svg>
+                                    Book a Ride to Venue
+                                </button>
+                            </div>
+
                             @if($event->venue_latitude && $event->venue_longitude)
                             <div class="mt-4 h-64 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden border border-cyan-200 dark:border-cyan-800">
                                 <div id="show_map" class="w-full h-full"></div>
@@ -710,6 +747,74 @@ echo json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                         @endauth
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+    <!-- Booking Ride Picker Modal -->
+    <div x-show="showBookingPicker" 
+         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+         x-cloak>
+        <div @click.away="closeBookingPicker()" 
+             class="glass-modal w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">Book a Ride</h3>
+                    <button @click="closeBookingPicker()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mb-6">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Destination:</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">{{ $event->title }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-500 line-clamp-1">{{ $event->venue_name }}</p>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4">
+                    <!-- Uber -->
+                    <a :href="getRideLink('uber')" target="_blank" @click="closeBookingPicker()"
+                       class="flex items-center justify-between p-4 rounded-2xl bg-black text-white hover:scale-[1.02] transition-transform shadow-lg">
+                        <div class="flex items-center gap-3">
+                            <span class="w-10 h-10 flex items-center justify-center p-0 overflow-hidden">
+                                <img src="{{ asset('assets/images/rides/uber.png') }}" alt="Uber" class="w-full h-full object-cover">
+                            </span>
+                            <span class="font-bold text-white">Uber</span>
+                        </div>
+                        <svg class="w-5 h-5 opacity-50 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </a>
+
+                    <!-- Bolt -->
+                    <a :href="getRideLink('bolt')" target="_blank" @click="closeBookingPicker()"
+                       class="flex items-center justify-between p-4 rounded-2xl bg-[#34d186] text-white hover:scale-[1.02] transition-transform shadow-lg">
+                        <div class="flex items-center gap-3">
+                            <span class="w-10 h-10 flex items-center justify-center p-0 overflow-hidden rounded-lg">
+                                <img src="{{ asset('assets/images/rides/bolt.png') }}" alt="Bolt" class="w-full h-full object-cover">
+                            </span>
+                            <span class="font-bold text-white">Bolt</span>
+                        </div>
+                        <svg class="w-5 h-5 opacity-50 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </a>
+
+                    <!-- Yango -->
+                    <a :href="getRideLink('yango')" target="_blank" @click="closeBookingPicker()"
+                       class="flex items-center justify-between p-4 rounded-2xl bg-[#ff0000] text-white hover:scale-[1.02] transition-transform shadow-lg">
+                        <div class="flex items-center gap-3">
+                            <span class="w-10 h-10 flex items-center justify-center p-0 overflow-hidden">
+                                <img src="{{ asset('assets/images/rides/yango.png') }}" alt="Yango" class="w-full h-full object-cover">
+                            </span>
+                            <span class="font-bold text-white">Yango</span>
+                        </div>
+                        <svg class="w-5 h-5 opacity-50 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                </div>
             </div>
         </div>
     </div>

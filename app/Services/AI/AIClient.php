@@ -148,12 +148,11 @@ class AIClient
             return null;
         }
 
-        // Add a randomized delay to prevent 429 Rate Limits during batch runs
-        // Base delay 5s + up to 3s jitter
-        usleep(5000000 + rand(0, 3000000));
+        // Add a small jitter, but cap it to 1s max so we don't block the UI
+        usleep(rand(100000, 1000000));
 
-        $response = Http::timeout(25)
-            ->retry(1, 200)
+        $response = Http::timeout(4)
+            ->retry(1, 100)
             ->when(config('services.ai.insecure', app()->environment('local')), fn($h) => $h->withoutVerifying())
             ->withToken($apiKey)
             ->acceptJson()
@@ -213,12 +212,11 @@ class AIClient
             return null;
         }
 
-        // Add a randomized delay to prevent 429 Rate Limits during batch runs
-        // Gemini Free Tier is 15 RPM = 1 request every 4s. 5-8s is safe.
-        usleep(5000000 + rand(0, 3000000));
+        // Add a small jitter, but cap it to 1s max so we don't block the UI
+        usleep(rand(100000, 1000000));
 
-        $response = Http::timeout(25)
-            ->retry(1, 200)
+        $response = Http::timeout(4)
+            ->retry(1, 100)
             ->when(config('services.ai.insecure', app()->environment('local')), fn($h) => $h->withoutVerifying())
             ->acceptJson()
             ->post($endpoint, $payload);

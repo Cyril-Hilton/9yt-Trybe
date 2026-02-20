@@ -226,13 +226,13 @@ class NewsService
         $startTime = microtime(true);
 
         foreach ($feedsToProcess as $feedUrl) {
-            // Check if we are running out of time (30s limit - 5s buffer)
-            if (microtime(true) - $startTime > 25) {
+            // Check if we are running out of time (faster fail for homepage, limit to 4s total)
+            if (microtime(true) - $startTime > 4) {
                 break;
             }
 
             try {
-                $response = Http::timeout(2)
+                $response = Http::timeout(1)
                     ->when(app()->environment('local'), fn($h) => $h->withoutVerifying())
                     ->get($feedUrl);
                 if (!$response->ok()) {

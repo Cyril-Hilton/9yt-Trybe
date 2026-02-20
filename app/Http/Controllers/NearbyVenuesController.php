@@ -228,7 +228,8 @@ class NearbyVenuesController extends Controller
             if (isset($config['keyword'])) $query['keyword'] = $config['keyword'];
 
             try {
-                $response = Http::when(app()->environment('local'), fn($h) => $h->withoutVerifying())
+                $response = Http::timeout(8) // Set 8s timeout per request
+                    ->when(app()->environment('local'), fn($h) => $h->withoutVerifying())
                     ->get($url, $query);
                 
                 if ($response->successful()) {
@@ -351,53 +352,35 @@ class NearbyVenuesController extends Controller
     private function getSearchConfigs($category)
     {
         return match($category) {
-            'club' => [
-                ['type' => 'night_club'],
-                ['type' => 'bar', 'keyword' => 'nightclub'],
-                ['keyword' => 'dance club'],
-                ['keyword' => 'disco'],
-                ['keyword' => 'nightlife'],
-            ],
-            'restaurant' => [
-                ['type' => 'restaurant'],
-                ['type' => 'cafe'],
-                ['type' => 'meal_takeaway'],
-                ['keyword' => 'food'],
-                ['keyword' => 'eatery'],
-            ],
-            'lounge' => [
-                ['type' => 'bar'],
-                ['type' => 'night_club', 'keyword' => 'lounge'],
-                ['keyword' => 'cocktail lounge'],
-                ['keyword' => 'hookah lounge'],
-                ['keyword' => 'shisha lounge'],
-            ],
-            'arcade' => [
-                ['type' => 'amusement_center'],
-                ['type' => 'bowling_alley'],
-                ['keyword' => 'arcade games'],
-                ['keyword' => 'game center'],
-                ['keyword' => 'gaming'],
-                ['keyword' => 'recreation'],
-                ['keyword' => 'fun center'],
-                ['keyword' => 'entertainment'],
-            ],
-            'hotel' => [
-                ['type' => 'lodging'],
-                ['type' => 'hotel'],
-                ['keyword' => 'hotel'],
-            ],
-            'lodging' => [
-                ['type' => 'lodging'],
-                ['keyword' => 'airbnb'],
-                ['keyword' => 'guest house'],
-                ['keyword' => 'vacation rental'],
-                ['keyword' => 'short stay'],
-                ['keyword' => 'apartment'],
-            ],
-            default => [
-                ['type' => 'restaurant']
-            ]
+        'club' => [
+            ['type' => 'night_club'],
+            ['type' => 'bar', 'keyword' => 'nightclub'],
+            ['keyword' => 'dance club'],
+        ],
+        'restaurant' => [
+            ['type' => 'restaurant'],
+            ['type' => 'cafe'],
+            ['keyword' => 'food'],
+        ],
+        'lounge' => [
+            ['type' => 'bar', 'keyword' => 'lounge'],
+            ['keyword' => 'cocktail lounge'],
+        ],
+        'arcade' => [
+            ['type' => 'amusement_center'],
+            ['keyword' => 'arcade games'],
+        ],
+        'hotel' => [
+            ['type' => 'lodging', 'keyword' => 'hotel'],
+        ],
+        'lodging' => [
+            ['type' => 'lodging'],
+            ['keyword' => 'airbnb'],
+            ['keyword' => 'guest house'],
+        ],
+        default => [
+            ['type' => 'restaurant']
+        ]
         };
     }
 

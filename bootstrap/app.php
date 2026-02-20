@@ -51,7 +51,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->renderable(function (TokenMismatchException $exception, Request $request) {
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'Session expired. Please log in again.',
+                    'message' => 'Session expired. Please refresh the page.',
                 ], 419);
             }
 
@@ -73,8 +73,10 @@ return Application::configure(basePath: dirname(__DIR__))
                     ->with('error', 'Session expired. Please log in again.');
             }
 
+            // For public users/buyers, just redirect them back to where they were or home,
+            // with a session expired message so they can continue browsing or log back in gracefully.
             return redirect()
-                ->route('user.login')
-                ->with('error', 'Session expired. Please log in again.');
+                ->back()->fallback(route('home'))
+                ->with('error', 'Your session has expired. Please try again.');
         });
     })->create();

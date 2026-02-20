@@ -31,6 +31,19 @@
     <style>
         [x-cloak] { display: none !important; }
 
+        .glass-btn-indigo {
+            background: rgba(79, 70, 229, 0.2) !important;
+            backdrop-filter: blur(10px) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(79, 70, 229, 0.4) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.2) !important;
+        }
+        .glass-btn-indigo:hover {
+            background: rgba(79, 70, 229, 0.3) !important;
+            transform: translateY(-2px) scale(1.02) !important;
+        }
+
         /* FORCE CORRECT HEADER TEXT COLORS - OVERRIDE ALL OTHER STYLES */
         nav a:not(.glass-btn), nav button:not(.glass-btn), nav span {
             color: #111827 !important; /* Black in light mode */
@@ -1839,22 +1852,31 @@
                             </div>
 
                             <!-- Actions -->
-                            <div class="flex gap-3">
-                                <a :href="venue.maps_url" target="_blank"
-                                   class="flex-1 text-center glass-btn-primary glass-btn-sm font-semibold shadow-lg">
-                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-                                    </svg>
-                                    Directions
-                                </a>
-                                <template x-if="venue.phone">
-                                    <a :href="`tel:${venue.phone}`"
-                                       class="glass-btn-success glass-btn-sm hover-lift transition">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                            <div class="space-y-3">
+                                <div class="flex gap-3">
+                                    <a :href="venue.maps_url" target="_blank"
+                                       class="flex-1 text-center glass-btn-primary glass-btn-sm font-semibold shadow-lg">
+                                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
                                         </svg>
+                                        Directions
                                     </a>
-                                </template>
+                                    <template x-if="venue.phone">
+                                        <a :href="`tel:${venue.phone}`"
+                                           class="glass-btn-success glass-btn-sm hover-lift transition">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                                            </svg>
+                                        </a>
+                                    </template>
+                                </div>
+                                <button x-on:click="openBookingPicker(venue)"
+                                        class="w-full text-center glass-btn-indigo glass-btn-sm font-semibold shadow-lg">
+                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                    Book a Ride
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1914,6 +1936,81 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                         </svg>
                     </button>
+                </div>
+            </div>
+
+            <!-- Ride Hailing Picker Modal -->
+            <div x-show="bookingRideFor" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                 x-cloak>
+                <div @click.away="closeBookingPicker()" 
+                     class="glass-modal w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Book a Ride</h3>
+                            <button @click="closeBookingPicker()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="mb-6">
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Destination:</p>
+                            <p class="font-semibold text-gray-900 dark:text-white" x-text="bookingRideFor?.name"></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-500 line-clamp-1" x-text="bookingRideFor?.address"></p>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-4">
+                            <!-- Uber -->
+                            <a :href="getRideLink('uber')" target="_blank" @click="closeBookingPicker()"
+                               class="flex items-center justify-between p-4 rounded-2xl bg-black text-white hover:scale-[1.02] transition-transform shadow-lg">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-10 h-10 flex items-center justify-center p-0 overflow-hidden">
+                                        <img src="{{ asset('assets/images/rides/uber.png') }}" alt="Uber" class="w-full h-full object-cover">
+                                    </span>
+                                    <span class="font-bold text-white">Uber</span>
+                                </div>
+                                <svg class="w-5 h-5 opacity-50 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </a>
+
+                            <!-- Bolt -->
+                            <a :href="getRideLink('bolt')" target="_blank" @click="closeBookingPicker()"
+                               class="flex items-center justify-between p-4 rounded-2xl bg-[#34d186] text-white hover:scale-[1.02] transition-transform shadow-lg">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-10 h-10 flex items-center justify-center p-0 overflow-hidden rounded-lg">
+                                        <img src="{{ asset('assets/images/rides/bolt.png') }}" alt="Bolt" class="w-full h-full object-cover">
+                                    </span>
+                                    <span class="font-bold text-white">Bolt</span>
+                                </div>
+                                <svg class="w-5 h-5 opacity-50 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </a>
+
+                            <!-- Yango -->
+                            <a :href="getRideLink('yango')" target="_blank" @click="closeBookingPicker()"
+                               class="flex items-center justify-between p-4 rounded-2xl bg-[#ff0000] text-white hover:scale-[1.02] transition-transform shadow-lg">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-10 h-10 flex items-center justify-center p-0 overflow-hidden">
+                                        <img src="{{ asset('assets/images/rides/yango.png') }}" alt="Yango" class="w-full h-full object-cover">
+                                    </span>
+                                    <span class="font-bold text-white">Yango</span>
+                                </div>
+                                <svg class="w-5 h-5 opacity-50 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2112,6 +2209,9 @@
                 lastLng: null,
                 updateThreshold: 0.001, // ~100 meters (0.001 degrees ≈ 111 meters)
 
+                // Booking state
+                bookingRideFor: null,
+
                 init() {
                     if (this.preferredRegion && this.regionCoordinates[this.preferredRegion]) {
                         this.applyRegionPreference();
@@ -2120,6 +2220,34 @@
 
                     // Automatically request location permission and start tracking
                     this.startLocationTracking();
+                },
+
+                openBookingPicker(venue) {
+                    this.bookingRideFor = venue;
+                    document.body.classList.add('overflow-hidden');
+                },
+
+                closeBookingPicker() {
+                    this.bookingRideFor = null;
+                    document.body.classList.remove('overflow-hidden');
+                },
+
+                getRideLink(app) {
+                    if (!this.bookingRideFor) return '#';
+                    const lat = this.bookingRideFor.latitude;
+                    const lng = this.bookingRideFor.longitude;
+                    const name = encodeURIComponent(this.bookingRideFor.name);
+                    
+                    switch(app) {
+                        case 'uber':
+                            return `https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}&dropoff[nickname]=${name}`;
+                        case 'bolt':
+                            return `https://bolt.eu/ride/?destination_lat=${lat}&destination_lng=${lng}`;
+                        case 'yango':
+                            return `https://yango.go.link/route?end-lat=${lat}&end-lon=${lng}`;
+                        default:
+                            return '#';
+                    }
                 },
                 startLocationTracking(force = false) {
                     if (this.regionOverride && !force) {
