@@ -176,13 +176,20 @@ echo json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     getRideLink(app) {
         const lat = {{ $event->venue_latitude ?? 0 }};
         const lng = {{ $event->venue_longitude ?? 0 }};
+        
+        // Validation: If no coordinates, return '#'
+        if (!lat || !lng || lat === 0 || lng === 0) {
+            return '#';
+        }
+        
         const name = encodeURIComponent('{{ $event->title }} at {{ $event->venue_name }}');
         
         switch(app) {
             case 'uber':
                 return `https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}&dropoff[nickname]=${name}`;
             case 'bolt':
-                return `https://bolt.eu/ride?destination_lat=${lat}&destination_lng=${lng}`;
+                // Modernized universal link format
+                return `https://bolt.eu/ride/?destination_lat=${lat}&destination_lng=${lng}`;
             case 'yango':
                 return `https://yango.go.link/route?end-lat=${lat}&end-lon=${lng}`;
             default:
@@ -403,6 +410,7 @@ echo json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                             @if($event->venue_address)
                             <p class="text-gray-600 dark:text-gray-400 mb-4">{{ $event->venue_address }}</p>
 
+                            @if($event->venue_latitude && $event->venue_longitude)
                             <!-- Book a Ride Action -->
                             <div class="mb-6">
                                 <button @click="openBookingPicker()" 
@@ -413,6 +421,7 @@ echo json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                                     Book a Ride to Venue
                                 </button>
                             </div>
+                            @endif
 
                             @if($event->venue_latitude && $event->venue_longitude)
                             <div class="mt-4 h-64 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden border border-cyan-200 dark:border-cyan-800">
