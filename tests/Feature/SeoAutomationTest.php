@@ -45,8 +45,8 @@ class SeoAutomationTest extends TestCase
             'title' => 'Accra Design Weekend',
             'region' => 'Greater Accra',
             'venue_name' => 'National Theatre',
-            'start_date' => now()->addDays(7),
-            'end_date' => now()->addDays(7)->addHours(5),
+            'start_date' => now()->addDays(120),
+            'end_date' => now()->addDays(120)->addHours(5),
             'approved_at' => now(),
             'status' => 'approved',
         ]);

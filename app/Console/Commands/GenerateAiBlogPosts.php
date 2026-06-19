@@ -101,11 +101,11 @@ class GenerateAiBlogPosts extends Command
         }
 
         $region = $newestEvent?->region ?: $this->getWhatsOnRegion();
-        $events = $this->getUpcomingEventsForRegion($region);
+        $events = $this->getUpcomingEventsForRegion($region, $newestEvent);
 
         if (empty($events)) {
             $region = $region ?: 'Ghana';
-            $events = $this->getUpcomingEventsAnyRegion();
+            $events = $this->getUpcomingEventsAnyRegion($newestEvent);
         }
 
         if (empty($events)) {
@@ -200,19 +200,25 @@ class GenerateAiBlogPosts extends Command
         return $region;
     }
 
-    private function getUpcomingEventsForRegion(string $region): array
+    private function getUpcomingEventsForRegion(string $region, ?Event $featuredEvent = null): array
     {
         if ($region === '') {
             return [];
         }
 
-        return Event::approved()
+        $events = Event::approved()
             ->upcoming()
             ->where('region', $region)
-            ->whereBetween('start_date', [now(), now()->addDays(30)])
             ->orderBy('start_date')
             ->limit(6)
-            ->get()
+            ->get();
+
+        if ($featuredEvent && !$events->contains('id', $featuredEvent->id)) {
+            $events->prepend($featuredEvent);
+            $events = $events->take(6);
+        }
+
+        return $events
             ->map(function ($event) {
                 return [
                     'title' => $event->title,
@@ -224,14 +230,20 @@ class GenerateAiBlogPosts extends Command
             ->toArray();
     }
 
-    private function getUpcomingEventsAnyRegion(): array
+    private function getUpcomingEventsAnyRegion(?Event $featuredEvent = null): array
     {
-        return Event::approved()
+        $events = Event::approved()
             ->upcoming()
-            ->whereBetween('start_date', [now(), now()->addDays(30)])
             ->orderBy('start_date')
             ->limit(6)
-            ->get()
+            ->get();
+
+        if ($featuredEvent && !$events->contains('id', $featuredEvent->id)) {
+            $events->prepend($featuredEvent);
+            $events = $events->take(6);
+        }
+
+        return $events
             ->map(function ($event) {
                 return [
                     'title' => $event->title,
@@ -253,7 +265,6 @@ class GenerateAiBlogPosts extends Command
 
         $query = Event::approved()
             ->upcoming()
-            ->whereBetween('start_date', [now(), now()->addDays(30)])
             ->orderByDesc('approved_at')
             ->orderByDesc('updated_at');
 
@@ -270,8 +281,7 @@ class GenerateAiBlogPosts extends Command
 
     private function buildWhatsOnFallback(string $region, array $events): array
     {
-        $range = now()->format('M j') . '–' . now()->addDays(30)->format('M j, Y');
-        $title = "Upcoming Events in {$region}: {$range}";
+        $title = "Upcoming Events in {$region}: " . now()->format('F Y');
 
         $lines = collect($events)->map(function ($event) {
             $details = array_filter([
