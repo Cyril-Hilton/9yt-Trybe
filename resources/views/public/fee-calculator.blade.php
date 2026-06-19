@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Fee Calculator - See Our Honest Pricing')
+@section('meta_description', 'Calculate transparent event ticketing and payment fees with the 9yt !Trybe fee calculator before publishing or booking.')
 
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12">

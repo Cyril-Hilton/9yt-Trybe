@@ -18,12 +18,7 @@
             }
         })();
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-        }
-    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         [x-cloak] { display: none !important; }
 
@@ -82,7 +77,6 @@
         }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/css/intlTelInput.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/js/intlTelInput.min.js"></script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300 relative overflow-x-hidden">
@@ -93,28 +87,6 @@
         <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-400/20 dark:bg-cyan-900/20 blur-[100px] animate-pulse" style="animation-delay: 2s"></div>
         <div class="absolute top-[20%] right-[20%] w-[30%] h-[30%] rounded-full bg-pink-400/20 dark:bg-pink-900/20 blur-[100px] animate-pulse" style="animation-delay: 4s"></div>
     </div>
-
-    <!-- Glassmorphism Logo Loader -->
-    @include('components.logo-loader', ['id' => 'page-loader', 'text' => 'Loading the !Trybe Community...'])
-
-    <script>
-        // Hide loader after page loads - wait for Alpine to be fully ready
-        window.addEventListener('load', function() {
-            // Give Alpine time to fully initialize
-            setTimeout(() => {
-                const loader = document.getElementById('page-loader');
-                if (loader) {
-                    // Try Alpine component first
-                    if (loader.__x && loader.__x.$data) {
-                        loader.__x.$data.show = false;
-                    } else {
-                        // Fallback: hide manually
-                        loader.style.display = 'none';
-                    }
-                }
-            }, 1000); // Slightly longer delay to ensure Alpine is ready
-        });
-    </script>
 
     <!-- Minimal Navigation Header with Glass Effect -->
     <nav class="fixed top-0 w-full z-50 glass-effect border-b border-white/40 dark:border-gray-700/50 shadow-sm transition-colors duration-300">

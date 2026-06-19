@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Gallery')
+@section('title', 'Event Gallery - 9yt !Trybe')
+@section('meta_title', 'Event Gallery, Photos & Highlights | 9yt !Trybe')
+@section('meta_description', 'Explore event photos, community highlights, fashion, nightlife, and memorable experiences from 9yt !Trybe.')
 
 @if(isset($isEmpty) && $isEmpty)
 @section('meta_robots', 'noindex, follow')

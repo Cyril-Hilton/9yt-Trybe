@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Jobs & Portfolios')
+@section('title', 'Creative Jobs & Portfolios - 9yt !Trybe')
+@section('meta_title', 'Creative Jobs, Talent & Portfolios | 9yt !Trybe')
+@section('meta_description', 'Discover creative talent, professional portfolios, and opportunities across Ghana’s events and entertainment community.')
 
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12">

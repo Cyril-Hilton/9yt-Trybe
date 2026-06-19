@@ -24,27 +24,27 @@ class SitemapController extends Controller
         
         // Static public pages (only URLs that exist and should be indexed)
         $staticPages = [
-            ['/', now(), 'daily', '1.0'],
-            ['/events', now(), 'daily', '0.9'],
-            ['/events/calendar', now(), 'weekly', '0.7'],
-            ['/gallery', now(), 'weekly', '0.6'],
-            ['/shop', now(), 'weekly', '0.7'],
-            ['/organizers', now(), 'weekly', '0.6'],
-            ['/polls', now(), 'weekly', '0.6'],
-            ['/news', now(), 'daily', '0.7'],
-            ['/blog', now(), 'daily', '0.7'],
-            ['/today', now(), 'daily', '0.7'],
-            ['/this-weekend', now(), 'weekly', '0.7'],
-            ['/jobs', now(), 'monthly', '0.4'],
-            ['/team', now(), 'monthly', '0.4'],
-            ['/about', now(), 'monthly', '0.3'],
-            ['/contact', now(), 'monthly', '0.3'],
-            ['/fee-calculator', now(), 'monthly', '0.3'],
-            ['/terms-and-conditions', now(), 'yearly', '0.2'],
-            ['/privacy-policy', now(), 'yearly', '0.2'],
-            ['/cookie-policy', now(), 'yearly', '0.2'],
-            ['/refund-policy', now(), 'yearly', '0.2'],
-            ['/disclaimer', now(), 'yearly', '0.2'],
+            ['/', null, 'daily', '1.0'],
+            ['/events', null, 'daily', '0.9'],
+            ['/events/calendar', null, 'weekly', '0.7'],
+            ['/gallery', null, 'weekly', '0.6'],
+            ['/shop', null, 'weekly', '0.7'],
+            ['/organizers', null, 'weekly', '0.6'],
+            ['/polls', null, 'weekly', '0.6'],
+            ['/news', null, 'daily', '0.7'],
+            ['/blog', null, 'daily', '0.7'],
+            ['/today', null, 'daily', '0.7'],
+            ['/this-weekend', null, 'weekly', '0.7'],
+            ['/jobs', null, 'monthly', '0.4'],
+            ['/team', null, 'monthly', '0.4'],
+            ['/about', null, 'monthly', '0.3'],
+            ['/contact', null, 'monthly', '0.3'],
+            ['/fee-calculator', null, 'monthly', '0.3'],
+            ['/terms-and-conditions', null, 'yearly', '0.2'],
+            ['/privacy-policy', null, 'yearly', '0.2'],
+            ['/cookie-policy', null, 'yearly', '0.2'],
+            ['/refund-policy', null, 'yearly', '0.2'],
+            ['/disclaimer', null, 'yearly', '0.2'],
         ];
 
         foreach ($staticPages as [$path, $lastmod, $changefreq, $priority]) {
@@ -53,6 +53,7 @@ class SitemapController extends Controller
 
         // Events
         $events = Event::approved()
+            ->select(['id', 'slug', 'updated_at', 'banner_image'])
             ->whereNotNull('slug')
             ->where('slug', '!=', '')
             ->orderBy('updated_at', 'desc')
@@ -74,11 +75,12 @@ class SitemapController extends Controller
         foreach ($regions as $region) {
             $slug = Str::slug($region);
             $url = "/locations/{$slug}";
-            $urls[] = $this->buildUrl($url, now(), 'weekly', '0.6');
+            $urls[] = $this->buildUrl($url, null, 'weekly', '0.6');
         }
 
         // Blog articles
         $blogArticles = Article::where('type', 'blog')
+            ->select(['id', 'slug', 'updated_at', 'image_path'])
             ->where('is_published', true)
             ->whereNotNull('slug')
             ->where('slug', '!=', '')
@@ -93,6 +95,7 @@ class SitemapController extends Controller
 
         // Categories
         $categories = Category::active()
+            ->select(['id', 'slug', 'updated_at'])
             ->whereNotNull('slug')
             ->where('slug', '!=', '')
             ->orderBy('updated_at', 'desc')
@@ -107,6 +110,7 @@ class SitemapController extends Controller
         $organizers = Company::where(function ($q) {
                 $q->where('is_suspended', false)->orWhereNull('is_suspended');
             })
+            ->select(['id', 'slug', 'updated_at'])
             ->whereNotNull('slug')
             ->where('slug', '!=', '')
             ->orderBy('updated_at', 'desc')
@@ -119,6 +123,7 @@ class SitemapController extends Controller
 
         // Conferences (public registration)
         $conferences = Conference::where('status', 'active')
+            ->select(['id', 'slug', 'updated_at'])
             ->whereNotNull('slug')
             ->where('slug', '!=', '')
             ->orderBy('updated_at', 'desc')
@@ -131,6 +136,7 @@ class SitemapController extends Controller
 
         // Surveys
         $surveys = Survey::where('status', 'active')
+            ->select(['id', 'slug', 'updated_at'])
             ->whereNotNull('slug')
             ->where('slug', '!=', '')
             ->orderBy('updated_at', 'desc')
@@ -143,6 +149,7 @@ class SitemapController extends Controller
 
         // Polls
         $polls = Poll::where('status', 'active')
+            ->select(['id', 'slug', 'updated_at'])
             ->whereNotNull('slug')
             ->where('slug', '!=', '')
             ->orderBy('updated_at', 'desc')
@@ -155,6 +162,7 @@ class SitemapController extends Controller
 
         // Shop products
         $products = ShopProduct::where('status', 'approved')
+            ->select(['id', 'slug', 'updated_at', 'image_path'])
             ->where('is_active', true)
             ->whereNotNull('slug')
             ->where('slug', '!=', '')

@@ -3,15 +3,13 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
-use App\Services\AI\AiContentService;
 use App\Services\News\NewsService;
 use Illuminate\Http\Request;
 
 class NewsController extends Controller
 {
     public function __construct(
-        private readonly NewsService $newsService,
-        private readonly AiContentService $aiContent
+        private readonly NewsService $newsService
     )
     {
     }
@@ -19,8 +17,8 @@ class NewsController extends Controller
     public function index(Request $request)
     {
         $query = $request->string('q')->trim()->value();
-        $articles = $this->newsService->getArticles($query ?: null);
-        $aiDigest = $this->aiContent->generateNewsDigest($articles, $query ?: null);
+        $articles = $this->newsService->getHomepageArticles($query ?: null);
+        $aiDigest = null;
 
         if ($request->wantsJson()) {
             return response()->json([

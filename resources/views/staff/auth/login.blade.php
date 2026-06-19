@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" x-data="{ darkMode: localStorage.getItem('darkMode') !== 'false' }" x-init="$watch('darkMode', val => localStorage.setItem('darkMode', val))\" :class="{ 'dark': darkMode }">
+<html lang="en" x-data="{ darkMode: localStorage.getItem('darkMode') !== 'false' }" x-init="$watch('darkMode', val => localStorage.setItem('darkMode', val))" :class="{ 'dark': darkMode }">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,12 +17,7 @@
             }
         })();
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-        }
-    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         [x-cloak] { display: none !important; }
 
@@ -51,11 +46,8 @@
         }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/css/intlTelInput.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-
-    @include('components.logo-loader', ['id' => 'page-loader', 'text' => 'Loading Scanner Portal...'])
 
     <!-- Minimal Navigation Header with Glass Effect -->
     <nav class="glass-effect border-b-2 border-white/30 dark:border-gray-700/50 shadow-2xl transition-colors duration-300">

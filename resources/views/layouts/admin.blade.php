@@ -18,12 +18,7 @@
             }
         })();
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-        }
-    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         [x-cloak] { display: none !important; }
 
@@ -108,27 +103,8 @@
     </style>
     <link rel="stylesheet" href="{{ asset('css/glassmorphism.css') }}">
     <link rel="stylesheet" href="{{ asset('css/responsive-tables.css') }}">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-    @include('components.logo-loader', ['id' => 'page-loader', 'text' => 'Loading Admin Dashboard...'])
-
-    <script>
-        // Hide loader after page loads - wait for Alpine to be fully ready
-        window.addEventListener('load', function() {
-            setTimeout(() => {
-                const loader = document.getElementById('page-loader');
-                if (loader) {
-                    if (loader.__x && loader.__x.$data) {
-                        loader.__x.$data.show = false;
-                    } else {
-                        loader.style.display = 'none';
-                    }
-                }
-            }, 1000);
-        });
-    </script>
-
     <div x-data="{ sidebarOpen: window.innerWidth >= 1024, profileDropdown: false }" class="min-h-screen">
         <!-- Sidebar with Glass Effect -->
         <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"

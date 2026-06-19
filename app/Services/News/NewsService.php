@@ -50,6 +50,26 @@ class NewsService
         });
     }
 
+    /**
+     * Return homepage news without making external HTTP or AI requests.
+     *
+     * The scheduled news refresh keeps the shared cache warm. On a cold cache,
+     * fall back to locally stored articles so the homepage remains fast.
+     */
+    public function getHomepageArticles(?string $query = null): array
+    {
+        $query = $query ?: config('services.news.default_query');
+        $provider = config('services.news.provider', 'gnews');
+        $cacheKey = 'news:' . $provider . ':' . Str::slug($query);
+        $cachedArticles = Cache::get($cacheKey);
+
+        if (is_array($cachedArticles)) {
+            return $cachedArticles;
+        }
+
+        return $this->normalizeArticles($this->fetchLocalArticles($query));
+    }
+
     public function warmCache(?string $query = null): array
     {
         $query = $query ?: config('services.news.default_query');

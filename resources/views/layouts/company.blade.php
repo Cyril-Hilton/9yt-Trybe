@@ -18,23 +18,7 @@
             }
         })();
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        dark: {
-                            bg: '#0f172a',
-                            card: '#1e293b',
-                            border: '#334155'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         [x-cloak] { display: none !important; }
 
@@ -118,33 +102,9 @@
         }
     </style>
     <link rel="stylesheet" href="{{ asset('css/glassmorphism.css') }}">
-    <!-- Leaflet Maps assets -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <style>
-        .leaflet-container { z-index: 1; }
-    </style>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @stack('head')
 </head>
 <body class="bg-gray-50 dark:bg-dark-bg transition-colors duration-200">
-    @include('components.logo-loader', ['id' => 'page-loader', 'text' => 'Loading Organizer Dashboard...'])
-
-    <script>
-        // Hide loader after page loads - wait for Alpine to be fully ready
-        window.addEventListener('load', function() {
-            setTimeout(() => {
-                const loader = document.getElementById('page-loader');
-                if (loader) {
-                    if (loader.__x && loader.__x.$data) {
-                        loader.__x.$data.show = false;
-                    } else {
-                        loader.style.display = 'none';
-                    }
-                }
-            }, 1000);
-        });
-    </script>
-
     <div x-data="{ sidebarOpen: window.innerWidth >= 1024 }" class="min-h-screen">
         <!-- Sidebar with Glass Effect -->
         <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"

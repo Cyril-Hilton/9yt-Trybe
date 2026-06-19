@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $conference->meta_title ?: ('Register for ' . $conference->title) }}</title>
     <meta name="description" content="{{ $conference->meta_description ?: Str::limit(strip_tags($conference->description ?? ''), 155) }}">
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         .fade-in {
             animation: fadeIn 0.5s ease-in;

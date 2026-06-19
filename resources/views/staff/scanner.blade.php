@@ -16,12 +16,7 @@
             }
         })();
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-        }
-    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         [x-cloak] { display: none !important; }
 
@@ -44,7 +39,6 @@
     </style>
     <link rel="stylesheet" href="{{ asset('css/glassmorphism.css') }}">
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
 

@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Terms and Conditions - 9yt !Trybe')
+@section('meta_description', 'Read the terms and conditions governing use of 9yt !Trybe, event listings, tickets, payments, organizer accounts, and platform services.')
 
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-900/10 dark:to-purple-900/10 py-12">

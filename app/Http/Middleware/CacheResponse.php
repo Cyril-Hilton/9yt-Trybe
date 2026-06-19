@@ -27,20 +27,32 @@ class CacheResponse
             return $next($request);
         }
 
-        // Generate cache key based on URL and query parameters
-        $key = 'route_cache:' . $request->fullUrl();
+        // Keep keys short and deterministic across cache drivers.
+        $key = 'route_cache:' . sha1($request->fullUrl());
+        $cached = Cache::get($key);
 
-        if (Cache::has($key)) {
-            $content = Cache::get($key);
-            return response($content);
+        if (is_array($cached) && array_key_exists('content', $cached)) {
+            return response(
+                $cached['content'],
+                $cached['status'] ?? 200,
+                array_filter([
+                    'Content-Type' => $cached['content_type'] ?? null,
+                    'X-Page-Cache' => 'HIT',
+                ])
+            );
         }
 
         $response = $next($request);
 
         // Only cache successful responses
         if ($response->getStatusCode() === 200) {
-            $content = $response->getContent();
-            Cache::put($key, $content, now()->addSeconds($ttl));
+            Cache::put($key, [
+                'content' => $response->getContent(),
+                'status' => $response->getStatusCode(),
+                'content_type' => $response->headers->get('Content-Type'),
+            ], now()->addSeconds($ttl));
+
+            $response->headers->set('X-Page-Cache', 'MISS');
         }
 
         return $response;

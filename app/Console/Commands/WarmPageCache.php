@@ -35,8 +35,8 @@ class WarmPageCache extends Command
             '/today',
             '/this-weekend',
             // Top regions
-            '/locations/Greater Accra',
-            '/locations/Ashanti',
+            '/locations/greater-accra',
+            '/locations/ashanti',
         ];
 
         foreach ($routes as $route) {

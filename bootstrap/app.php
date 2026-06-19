@@ -13,6 +13,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->web(append: [
+            \App\Http\Middleware\CurrencyMiddleware::class,
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
+
         $middleware->redirectGuestsTo(function (Request $request) {
             // Check which guard should be used based on the URL
             if ($request->is('organization/*')) {

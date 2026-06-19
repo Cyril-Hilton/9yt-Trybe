@@ -49,7 +49,8 @@ class SearchController extends Controller
             ]);
         }
 
-        $aiSearch = app(AiSearchService::class)->rewrite($query);
+        // Search must remain instant even when the AI provider is slow or offline.
+        $aiSearch = app(AiSearchService::class)->rewriteCached($query);
         $searchQuery = $aiSearch['corrected_query'] ?? $query;
         $terms = $this->buildSearchTerms($searchQuery, $aiSearch['synonyms'] ?? []);
 

@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Cookie Policy - 9yt !Trybe')
+@section('meta_description', 'Read the 9yt !Trybe cookie policy and learn how cookies support security, preferences, analytics, and platform functionality.')
 
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-900/10 dark:to-purple-900/10 py-12">

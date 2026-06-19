@@ -11,7 +11,7 @@
     <meta name="description" content="@yield('meta_description', 'Discover and book tickets for the best events, concerts, and entertainment experiences. Join the !Trybe community and never miss out on amazing experiences.')">
     <meta name="keywords" content="@yield('meta_keywords', 'events, concerts, tickets, entertainment, book tickets, event discovery, !Trybe, 9yt, conferences, festivals, shows')">
     <meta name="author" content="9yt !Trybe">
-    <meta name="robots" content="@yield('meta_robots', 'index, follow')">
+    <meta name="robots" content="@yield('meta_robots', 'index, follow, max-image-preview:large')">
     <link rel="canonical" href="{{ url()->current() }}">
     @include('components.seo-hreflang')
     @php
@@ -49,18 +49,19 @@
     <meta property="og:description" content="@yield('og_description', 'Discover and book tickets for the best events, conferences, and entertainment experiences.')">
     <meta property="og:image" content="@yield('og_image', asset('ui/logo/9yt-trybe-logo-light.png'))">
     <meta property="og:site_name" content="9yt !Trybe">
-    <meta property="og:locale" content="en_US">
+    <meta property="og:locale" content="en_GH">
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="{{ url()->current() }}">
-    <meta property="twitter:title" content="@yield('twitter_title', '9yt !Trybe - Discover Amazing Events')">
-    <meta property="twitter:description" content="@yield('twitter_description', 'Discover and book tickets for the best events, conferences, and entertainment experiences.')">
-    <meta property="twitter:image" content="@yield('twitter_image', asset('ui/logo/9yt-trybe-logo-light.png'))">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="{{ url()->current() }}">
+    <meta name="twitter:title" content="@yield('twitter_title', '9yt !Trybe - Discover Amazing Events')">
+    <meta name="twitter:description" content="@yield('twitter_description', 'Discover and book tickets for the best events, conferences, and entertainment experiences.')">
+    <meta name="twitter:image" content="@yield('twitter_image', asset('ui/logo/9yt-trybe-logo-light.png'))">
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ asset('ui/logo/9yt-trybe-logo-light.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('ui/logo/9yt-trybe-logo-light.png') }}">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
     <link rel="alternate" type="application/rss+xml" title="9yt !Trybe Blog" href="{{ route('rss') }}">
 
     <!-- Additional SEO Meta Tags -->
@@ -81,14 +82,13 @@
             }
         })();
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-        }
-    </script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="{{ asset('css/glassmorphism.css') }}?v={{ time() }}">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @php
+        $glassVersion = file_exists(public_path('css/glassmorphism.css'))
+            ? filemtime(public_path('css/glassmorphism.css'))
+            : '1';
+    @endphp
+    <link rel="stylesheet" href="{{ asset('css/glassmorphism.css') }}?v={{ $glassVersion }}">
     <style>
         [x-cloak] { display: none !important; }
 
@@ -538,36 +538,10 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <style>
-        .leaflet-container {
-            z-index: 1;
-        }
-    </style>
     @yield('styles')
     @stack('head')
 </head>
 <body class="bg-white dark:bg-black transition-colors duration-300">
-    <!-- Page Loader with Logo -->
-    @include('components.logo-loader', ['id' => 'page-loader', 'text' => 'Loading the !Trybe Community...'])
-
-    <script>
-        // Hide loader after page loads - wait for Alpine to be fully ready
-        window.addEventListener('load', function() {
-            setTimeout(() => {
-                const loader = document.getElementById('page-loader');
-                if (loader) {
-                    if (loader.__x && loader.__x.$data) {
-                        loader.__x.$data.show = false;
-                    } else {
-                        loader.style.display = 'none';
-                    }
-                }
-            }, 1000);
-        });
-    </script>
-
     <!-- Skip to Content Link for Accessibility -->
     <a href="#main-content" class="skip-to-content">Skip to main content</a>
 

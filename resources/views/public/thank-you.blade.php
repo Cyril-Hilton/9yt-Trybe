@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thank You for Registering!</title>
     <meta name="robots" content="noindex, nofollow">
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         @keyframes checkmark {
             0% { stroke-dashoffset: 100; }

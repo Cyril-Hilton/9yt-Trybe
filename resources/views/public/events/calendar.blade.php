@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Event Calendar - ' . $date->format('F Y') . ' - 9yt !Trybe')
+@section('meta_description', 'Browse upcoming events in Ghana by date with the 9yt !Trybe event calendar. Find concerts, festivals, nightlife, and business events.')
 
 @section('content')
 <!-- Hero Section -->

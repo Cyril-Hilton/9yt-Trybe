@@ -3,11 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>9yt !Trybe - Discover Amazing Events</title>
+    <title>Events in Ghana, Tickets & Experiences | 9yt !Trybe</title>
+    <meta name="description" content="Discover events in Ghana, book tickets, explore venues, shop, vote, and connect with organizers on 9yt !Trybe.">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <link rel="canonical" href="{{ route('home') }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ route('home') }}">
+    <meta property="og:title" content="Events in Ghana, Tickets & Experiences | 9yt !Trybe">
+    <meta property="og:description" content="Discover events in Ghana, book tickets, explore venues, and connect with organizers.">
+    <meta property="og:image" content="{{ asset('ui/sliders/slide1-poster.jpg') }}">
+    <meta property="og:site_name" content="9yt !Trybe">
+    <meta property="og:locale" content="en_GH">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Events in Ghana, Tickets & Experiences | 9yt !Trybe">
+    <meta name="twitter:description" content="Discover events in Ghana, book tickets, explore venues, and connect with organizers.">
+    <meta name="twitter:image" content="{{ asset('ui/sliders/slide1-poster.jpg') }}">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
     <link rel="icon" type="image/png" href="{{ asset('ui/logo/9yt-trybe-logo-light.png') }}">
     <link rel="preload" as="image" href="{{ asset('ui/logo/9yt-trybe-logo-light.png') }}">
-    <link rel="preload" as="style" href="{{ asset('css/glassmorphism.css') }}?v={{ time() }}">
-    <link rel="preload" as="video" href="{{ asset('ui/sliders/slide1.mp4') }}" type="video/mp4">
+    <link rel="preload" as="image" href="{{ asset('ui/sliders/slide1-poster.jpg') }}" fetchpriority="high">
+    @php
+        $glassVersion = file_exists(public_path('css/glassmorphism.css'))
+            ? filemtime(public_path('css/glassmorphism.css'))
+            : '1';
+    @endphp
+    <link rel="preload" as="style" href="{{ asset('css/glassmorphism.css') }}?v={{ $glassVersion }}">
+    @php
+        $homeSchema = [
+            '@context' => 'https://schema.org',
+            '@graph' => [
+                [
+                    '@type' => 'Organization',
+                    '@id' => route('home') . '#organization',
+                    'name' => '9yt !Trybe',
+                    'url' => route('home'),
+                    'logo' => asset('ui/logo/9yt-trybe-logo-light.png'),
+                ],
+                [
+                    '@type' => 'WebSite',
+                    '@id' => route('home') . '#website',
+                    'url' => route('home'),
+                    'name' => '9yt !Trybe',
+                    'publisher' => ['@id' => route('home') . '#organization'],
+                    'potentialAction' => [
+                        '@type' => 'SearchAction',
+                        'target' => route('search') . '?q={search_term_string}',
+                        'query-input' => 'required name=search_term_string',
+                    ],
+                ],
+            ],
+        ];
+    @endphp
+    <script type="application/ld+json">{!! json_encode($homeSchema, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}</script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <!-- CRITICAL: Set dark mode BEFORE any rendering to prevent flash -->
     <script>
         (function() {
@@ -19,15 +67,7 @@
             }
         })();
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-        }
-    </script>
-
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="{{ asset('css/glassmorphism.css') }}?v={{ time() }}">
+    <link rel="stylesheet" href="{{ asset('css/glassmorphism.css') }}?v={{ $glassVersion }}">
     <style>
         [x-cloak] { display: none !important; }
 
@@ -710,30 +750,8 @@
         }
     </style>
 
-    <!-- Shepherd.js for Product Tours -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/css/shepherd.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/js/shepherd.min.js"></script>
 </head>
 <body class="bg-white dark:bg-black min-h-screen transition-colors duration-300" x-data="{ mobileMenuOpen: false }">
-    <!-- Page Loader with Glassmorphism Logo -->
-    @include('components.logo-loader', ['id' => 'page-loader', 'text' => 'Loading the !Trybe Community...'])
-
-    <script>
-        // Hide loader after page loads - wait for Alpine to be fully ready
-        window.addEventListener('load', function() {
-            setTimeout(() => {
-                const loader = document.getElementById('page-loader');
-                if (loader) {
-                    if (loader.__x && loader.__x.$data) {
-                        loader.__x.$data.show = false;
-                    } else {
-                        loader.style.display = 'none';
-                    }
-                }
-            }, 200);
-        });
-    </script>
-
     <!-- Header - Sticky Navigation -->
     <nav class="sticky top-0 z-50 glass-header-transparent shadow-lg transition-all duration-300">
         <div class="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
@@ -1244,7 +1262,7 @@
                  x-transition:leave-start="opacity-100"
                  x-transition:leave-end="opacity-0"
                  class="absolute inset-0">
-                <video autoplay muted loop playsinline class="w-full h-full object-cover">
+                <video x-ref="slide0Video" muted loop playsinline preload="none" poster="{{ asset('ui/sliders/slide1-poster.jpg') }}" class="w-full h-full object-cover">
                     <source src="{{ asset('ui/sliders/slide1.mp4') }}" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
@@ -1260,11 +1278,33 @@
                  x-transition:leave-start="opacity-100"
                  x-transition:leave-end="opacity-0"
                  class="absolute inset-0">
-                <video autoplay muted loop playsinline class="w-full h-full object-cover">
-                    <source src="{{ asset('ui/sliders/slide2.mp4') }}" type="video/mp4">
+                <video x-ref="slide1Video" muted loop playsinline preload="none" poster="{{ asset('ui/sliders/slide2-poster.jpg') }}" class="w-full h-full object-cover">
+                    <source data-src="{{ asset('ui/sliders/slide2.mp4') }}" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
                 <div class="absolute inset-0 bg-gradient-to-t from-pink-900/60 via-transparent to-transparent"></div>
+            </div>
+
+            <div class="absolute inset-0 z-[5] flex items-center pointer-events-none">
+                <div class="max-w-7xl mx-auto w-full px-6 sm:px-10 lg:px-16 pt-20">
+                    <div class="max-w-3xl pointer-events-auto">
+                        <p class="text-sm sm:text-base uppercase tracking-[0.24em] text-cyan-200 font-semibold mb-3">Discover Ghana’s next experience</p>
+                        <h1 class="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white leading-tight drop-shadow-2xl">
+                            Events, tickets and unforgettable moments.
+                        </h1>
+                        <p class="mt-4 text-base sm:text-xl text-white/90 max-w-2xl drop-shadow-lg">
+                            Find concerts, nightlife, business events, festivals and experiences near you.
+                        </p>
+                        <div class="mt-7 flex flex-wrap gap-3">
+                            <a href="{{ route('events.index') }}" class="inline-flex items-center rounded-xl bg-cyan-500 px-6 py-3 font-bold text-white shadow-xl hover:bg-cyan-400 transition">
+                                Explore events
+                            </a>
+                            <a href="{{ route('organization.register') }}" class="inline-flex items-center rounded-xl border border-white/50 bg-black/25 px-6 py-3 font-bold text-white backdrop-blur-md hover:bg-black/40 transition">
+                                Create an event
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Navigation Arrows with Glow -->
@@ -1281,8 +1321,8 @@
 
             <!-- Dots Navigation with Glow -->
             <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-3 z-10">
-                <button x-on:click="currentSlide = 0" :class="currentSlide === 0 ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 w-8' : 'bg-white bg-opacity-50 w-3'" class="h-3 rounded-full transition-all duration-300 neon-border"></button>
-                <button x-on:click="currentSlide = 1" :class="currentSlide === 1 ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 w-8' : 'bg-white bg-opacity-50 w-3'" class="h-3 rounded-full transition-all duration-300 neon-border"></button>
+                <button x-on:click="goToSlide(0)" aria-label="Show first hero slide" :class="currentSlide === 0 ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 w-8' : 'bg-white bg-opacity-50 w-3'" class="h-3 rounded-full transition-all duration-300 neon-border"></button>
+                <button x-on:click="goToSlide(1)" aria-label="Show second hero slide" :class="currentSlide === 1 ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 w-8' : 'bg-white bg-opacity-50 w-3'" class="h-3 rounded-full transition-all duration-300 neon-border"></button>
             </div>
         </div>
     </section>
@@ -1546,7 +1586,7 @@
                         <article class="rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition">
                             @if(!empty($article['image']))
                                 <a href="{{ $article['url'] }}" target="_blank" rel="noopener">
-                                    <img src="{{ $article['image'] }}" alt="{{ $article['title'] }}" class="w-full h-44 object-cover">
+                                    <img src="{{ $article['image'] }}" alt="{{ $article['title'] }}" class="w-full h-44 object-cover" loading="lazy" decoding="async">
                                 </a>
                             @endif
                             <div class="p-5">
@@ -1559,7 +1599,7 @@
                                     </a>
                                 </h3>
                                 <p class="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-3">
-                                    {{ $article['description'] ?? '' }}
+                                    {{ \Illuminate\Support\Str::limit(strip_tags($article['description'] ?? ''), 180) }}
                                 </p>
                                 <div class="mt-4 text-xs text-gray-500 flex items-center justify-between">
                                     <span>{{ $article['author'] ?? 'Editorial' }}</span>
@@ -2122,17 +2162,55 @@
                 autoplayInterval: null,
 
                 init() {
-                    this.startAutoplay();
+                    const startSlider = () => {
+                        this.$nextTick(() => this.syncVideos());
+                        this.startAutoplay();
+                    };
+                    const scheduleSlider = () => window.setTimeout(startSlider, 1500);
+
+                    if (document.readyState === 'complete') {
+                        scheduleSlider();
+                    } else {
+                        window.addEventListener('load', scheduleSlider, { once: true });
+                    }
                 },
 
                 nextSlide() {
                     this.currentSlide = (this.currentSlide + 1) % this.totalSlides;
+                    this.$nextTick(() => this.syncVideos());
                     this.resetAutoplay();
                 },
 
                 prevSlide() {
                     this.currentSlide = (this.currentSlide - 1 + this.totalSlides) % this.totalSlides;
+                    this.$nextTick(() => this.syncVideos());
                     this.resetAutoplay();
+                },
+
+                goToSlide(index) {
+                    this.currentSlide = index;
+                    this.$nextTick(() => this.syncVideos());
+                    this.resetAutoplay();
+                },
+
+                syncVideos() {
+                    const videos = [this.$refs.slide0Video, this.$refs.slide1Video];
+
+                    videos.forEach((video, index) => {
+                        if (!video) return;
+
+                        if (index === this.currentSlide) {
+                            const source = video.querySelector('source[data-src]');
+                            if (source && !source.src) {
+                                source.src = source.dataset.src;
+                                video.load();
+                            }
+
+                            video.play().catch(() => {});
+                        } else {
+                            video.pause();
+                        }
+                    });
                 },
 
                 startAutoplay() {
@@ -2188,7 +2266,6 @@
                 loading: false,
                 errorMessage: '',
                 currentPage: 1,
-                currentPage: 1,
                 perPage: 15,
                 filteredVenuesCount: 0,
                 allFilteredVenues: [],
@@ -2214,12 +2291,24 @@
 
                 init() {
                     if (this.preferredRegion && this.regionCoordinates[this.preferredRegion]) {
-                        this.applyRegionPreference();
-                        return;
+                        const region = this.regionCoordinates[this.preferredRegion];
+                        this.regionOverride = true;
+                        this.userLat = region.lat;
+                        this.userLng = region.lng;
+                        this.userCity = region.city;
                     }
 
-                    // Automatically request location permission and start tracking
-                    this.startLocationTracking();
+                    // Defer venue API work until the section is close to view.
+                    this.$nextTick(() => {
+                        const observer = new IntersectionObserver((entries) => {
+                            if (entries.some((entry) => entry.isIntersecting)) {
+                                observer.disconnect();
+                                this.loadVenues();
+                            }
+                        }, { rootMargin: '250px' });
+
+                        observer.observe(this.$root);
+                    });
                 },
 
                 openBookingPicker(venue) {
@@ -2626,6 +2715,10 @@
 
         // Interactive Tour Guide - Professional & Mobile-Responsive
         function initTour() {
+            if (!window.Shepherd) {
+                return;
+            }
+
             // Check if user has seen the tour
             const tourCompleted = localStorage.getItem('tourCompleted');
             console.log('Tour Status:', tourCompleted ? 'Completed' : 'Not completed');
@@ -2814,5 +2907,3 @@
     </script>
 </body>
 </html>
-
-

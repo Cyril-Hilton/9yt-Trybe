@@ -58,6 +58,19 @@ class AiSearchService
         });
     }
 
+    public function rewriteCached(string $query): ?array
+    {
+        $query = trim($query);
+
+        if ($query === '') {
+            return null;
+        }
+
+        $cached = Cache::get('ai:search:rewrite:' . md5($query));
+
+        return is_array($cached) ? $cached : null;
+    }
+
     private function normalizeResult(?array $result, string $fallback): ?array
     {
         if (!$result) {

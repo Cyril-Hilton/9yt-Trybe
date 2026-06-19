@@ -47,7 +47,9 @@ Route::get('/', [App\Http\Controllers\Public\EventController::class, 'home'])
     ->middleware('cache.response:600'); // 10 minutes cache
 
 // SEO - Sitemap for search engines
-Route::get('/sitemap.xml', [App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
+Route::get('/sitemap.xml', [App\Http\Controllers\SitemapController::class, 'index'])
+    ->name('sitemap')
+    ->middleware('cache.response:21600');
 
 // Global Search
 Route::get('/search', [App\Http\Controllers\SearchController::class, 'index'])->name('search');
@@ -61,9 +63,9 @@ Route::get('/api/news', [App\Http\Controllers\Public\NewsController::class, 'ind
 
 // Blog (How-tos, What's on)
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
-Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 Route::get('/blog/rss.xml', [BlogController::class, 'rss'])->name('blog.rss');
 Route::get('/rss.xml', [BlogController::class, 'rss'])->name('rss');
+Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
 // Programmatic SEO landings
 Route::get('/today', [SeoLandingController::class, 'today'])->name('seo.today')->middleware('cache.response:300');

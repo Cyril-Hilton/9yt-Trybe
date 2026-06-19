@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('title', 'Meet the Team - Join the Trybe')
+@section('meta_title', 'Meet the 9yt !Trybe Team')
+@section('meta_description', 'Meet the people building 9yt !Trybe and discover opportunities to join our staff, volunteer, and internship community.')
 
 @if(isset($isEmpty) && $isEmpty)
 @section('meta_robots', 'noindex, follow')

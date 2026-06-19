@@ -2,6 +2,12 @@
 
 @section('title', 'Create Event')
 
+@push('head')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<style>.leaflet-container { z-index: 1; }</style>
+@endpush
+
 @section('content')
 <div class="py-12" x-data="eventForm()">
     <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">

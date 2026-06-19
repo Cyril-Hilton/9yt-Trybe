@@ -8,7 +8,6 @@ use App\Models\Event;
 use App\Models\EventLike;
 use App\Models\EventView;
 use App\Models\OrganizationFollower;
-use App\Services\AI\AiContentService;
 use App\Services\News\NewsService;
 use App\Services\SEO\AiLandingService;
 use Illuminate\Http\Request;
@@ -18,7 +17,7 @@ use App\Services\SEO\AiTranslationService;
 
 class EventController extends Controller
 {
-    public function home(Request $request, NewsService $newsService, AiContentService $aiContent)
+    public function home(Request $request, NewsService $newsService)
     {
         $query = Event::approved()->with(['company', 'tickets', 'categories']);
 
@@ -61,29 +60,10 @@ class EventController extends Controller
             'Upper East', 'Upper West', 'Bono', 'Bono East', 'Ahafo',
         ];
 
-        // Graceful degradation for external services - prevent 5xx errors
-        $newsArticles = [];
-        try {
-            $newsArticles = $newsService->getArticles();
-        } catch (\Throwable $e) {
-            // Log error but don't crash the page
-            \Log::error('NewsService failed on homepage', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-        }
-        
-        // Non-blocking digest: if cache is empty or AI fails, we return null gracefully
+        // Never block the homepage on third-party news or AI providers.
+        // The scheduler refreshes these caches in the background.
+        $newsArticles = $newsService->getHomepageArticles();
         $newsDigest = null;
-        try {
-            $newsDigest = $aiContent->generateNewsDigest($newsArticles, null);
-        } catch (\Throwable $e) {
-            // Log error but don't crash the page
-            \Log::error('AiContentService failed on homepage', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-        }
 
         return view('welcome', compact('events', 'regions', 'newsArticles', 'newsDigest'));
     }

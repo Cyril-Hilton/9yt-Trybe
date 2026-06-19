@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'About Us')
+@section('meta_description', 'Learn how 9yt !Trybe connects people with events, organizers, tickets, creative talent, venues, and experiences across Ghana.')
 
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12">

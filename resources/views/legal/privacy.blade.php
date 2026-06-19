@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Privacy Policy - 9yt !Trybe')
+@section('meta_description', 'Learn how 9yt !Trybe collects, uses, protects, and manages personal information across events, tickets, accounts, and services.')
 
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-900/10 dark:to-purple-900/10 py-12">

@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('title', 'Shop - 9yt !Trybe Merch')
+@section('meta_title', 'Shop 9yt !Trybe Merchandise & Event Essentials')
+@section('meta_description', 'Shop official 9yt !Trybe merchandise and event essentials from trusted sellers.')
 
 @if(isset($isEmpty) && $isEmpty)
 @section('meta_robots', 'noindex, follow')
