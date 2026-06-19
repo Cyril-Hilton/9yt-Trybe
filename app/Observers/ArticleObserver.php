@@ -30,6 +30,6 @@ class ArticleObserver
         }
 
         $url = url('/blog/' . $article->slug);
-        app(IndexNowService::class)->submitUrls([$url]);
+        app(IndexNowService::class)->queueUrls([$url]);
     }
 }

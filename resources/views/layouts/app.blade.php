@@ -545,7 +545,10 @@
     <!-- Skip to Content Link for Accessibility -->
     <a href="#main-content" class="skip-to-content">Skip to main content</a>
 
-    <!-- Header - Sticky Navigation with Glass Effect -->
+    @include('components.public-header')
+
+    @if(false)
+    <!-- Legacy header retained temporarily for reference; shared header above is authoritative. -->
     <nav class="sticky top-0 z-50 animated-gradient-bg glass-header-transparent shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
@@ -908,6 +911,7 @@
             </div>
         </div>
     </nav>
+    @endif
 
     <!-- Main Content -->
     <main id="main-content" tabindex="-1">

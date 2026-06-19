@@ -43,8 +43,19 @@ Schedule::command('seo:refresh --only-missing')
         ->timezone('Africa/Accra')
         ->withoutOverlapping();
 
-// Schedule: Daily AI blog generation (drafts by default)
-Schedule::command('ai:generate-blog-posts')
+// Submit newly published URLs without delaying event/product publishing requests.
+Schedule::command('seo:submit-indexnow')
+        ->everyFiveMinutes()
+        ->withoutOverlapping();
+
+// Publish a factual roundup when newly approved upcoming events are available.
+Schedule::command('ai:generate-blog-posts --count=1 --type=whats-on --auto-publish --only-if-new-events')
+        ->hourly()
+        ->timezone('Africa/Accra')
+        ->withoutOverlapping();
+
+// Publish one daily evergreen guide.
+Schedule::command('ai:generate-blog-posts --count=1 --type=how-to --auto-publish')
         ->dailyAt('03:10')
         ->timezone('Africa/Accra')
         ->withoutOverlapping();

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -200,7 +201,7 @@ class Event extends Model
                 $image = $this->images()->orderBy('order')->first();
             }
             if ($image && $image->image_path) {
-                return asset('storage/' . $image->image_path);
+                return MediaUrl::fromPath($image->image_path);
             }
 
             return asset('images/default-event-banner.jpg');
@@ -210,7 +211,7 @@ class Event extends Model
             return asset('storage/events/banners/' . $banner);
         }
 
-        return asset('storage/' . $banner);
+        return MediaUrl::fromPath($banner);
     }
 
     public function getFlierPathAttribute(): ?string
@@ -247,7 +248,7 @@ class Event extends Model
             return $path;
         }
 
-        return asset('storage/' . $path);
+        return MediaUrl::fromPath($path) ?? asset('ui/logo/9yt-trybe-logo-light.png');
     }
 
     public function hasLocalFlier(): bool

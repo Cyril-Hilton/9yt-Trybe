@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -35,15 +36,7 @@ class Article extends Model
 
     public function getImageUrlAttribute()
     {
-        if (!$this->image_path) {
-            return null;
-        }
-
-        if (str_starts_with($this->image_path, 'http://') || str_starts_with($this->image_path, 'https://')) {
-            return $this->image_path;
-        }
-
-        return asset('storage/' . $this->image_path);
+        return MediaUrl::fromPath($this->image_path);
     }
 
     public function getPublicUrlAttribute(): string

@@ -26,6 +26,6 @@ class ConferenceObserver
         }
 
         $url = $conference->public_url;
-        app(IndexNowService::class)->submitUrls([$url]);
+        app(IndexNowService::class)->queueUrls([$url]);
     }
 }

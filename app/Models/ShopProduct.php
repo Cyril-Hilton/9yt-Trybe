@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -68,7 +69,7 @@ class ShopProduct extends Model
 
     public function getImageUrlAttribute()
     {
-        return $this->image_path ? asset('storage/' . $this->image_path) : null;
+        return MediaUrl::fromPath($this->image_path);
     }
 
     public function getFormattedPriceAttribute()

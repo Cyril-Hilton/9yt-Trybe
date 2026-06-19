@@ -752,7 +752,10 @@
 
 </head>
 <body class="bg-white dark:bg-black min-h-screen transition-colors duration-300" x-data="{ mobileMenuOpen: false }">
-    <!-- Header - Sticky Navigation -->
+    @include('components.public-header')
+
+    @if(false)
+    <!-- Legacy header retained temporarily for reference; shared header above is authoritative. -->
     <nav class="sticky top-0 z-50 glass-header-transparent shadow-lg transition-all duration-300">
         <div class="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16 sm:h-20">
@@ -1249,6 +1252,7 @@
             </div>
         </div>
     </nav>
+    @endif
 
     <!-- Hero Slider Section with Futuristic Design -->
     <section class="relative bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-slate-900/20 dark:to-slate-800/20 transition-colors duration-300 -mt-20" x-data="slider()" x-init="init()">
@@ -1285,28 +1289,6 @@
                 <div class="absolute inset-0 bg-gradient-to-t from-pink-900/60 via-transparent to-transparent"></div>
             </div>
 
-            <div class="absolute inset-0 z-[5] flex items-center pointer-events-none">
-                <div class="max-w-7xl mx-auto w-full px-6 sm:px-10 lg:px-16 pt-20">
-                    <div class="max-w-3xl pointer-events-auto">
-                        <p class="text-sm sm:text-base uppercase tracking-[0.24em] text-cyan-200 font-semibold mb-3">Discover Ghana’s next experience</p>
-                        <h1 class="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white leading-tight drop-shadow-2xl">
-                            Events, tickets and unforgettable moments.
-                        </h1>
-                        <p class="mt-4 text-base sm:text-xl text-white/90 max-w-2xl drop-shadow-lg">
-                            Find concerts, nightlife, business events, festivals and experiences near you.
-                        </p>
-                        <div class="mt-7 flex flex-wrap gap-3">
-                            <a href="{{ route('events.index') }}" class="inline-flex items-center rounded-xl bg-cyan-500 px-6 py-3 font-bold text-white shadow-xl hover:bg-cyan-400 transition">
-                                Explore events
-                            </a>
-                            <a href="{{ route('organization.register') }}" class="inline-flex items-center rounded-xl border border-white/50 bg-black/25 px-6 py-3 font-bold text-white backdrop-blur-md hover:bg-black/40 transition">
-                                Create an event
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Navigation Arrows with Glow -->
             <button x-on:click="prevSlide()" class="absolute left-4 top-1/2 transform -translate-y-1/2 glass-effect text-white p-3 rounded-full transition hover-lift neon-border z-10">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1334,7 +1316,7 @@
         <div class="mb-8">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
                 <div class="flex items-center space-x-4 mb-4 md:mb-0">
-                    <h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Browsing events in</h2>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Browsing events in</h1>
                     <form method="GET" action="/" class="relative">
                         @if(request('filter'))
                         <input type="hidden" name="filter" value="{{ request('filter') }}">

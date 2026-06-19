@@ -11,7 +11,11 @@ use Illuminate\Support\Str;
 
 class GenerateAiBlogPosts extends Command
 {
-    protected $signature = 'ai:generate-blog-posts {--count=} {--auto-publish} {--type=}';
+    protected $signature = 'ai:generate-blog-posts
+        {--count=}
+        {--auto-publish}
+        {--type=}
+        {--only-if-new-events : Generate a roundup only when events were approved since the latest roundup}';
 
     protected $description = 'Generate blog posts using AI (how-to and whats-on).';
 
@@ -25,11 +29,12 @@ class GenerateAiBlogPosts extends Command
 
         $typeOption = trim((string) $this->option('type'));
         $types = $typeOption !== '' ? [strtolower($typeOption)] : $this->buildTypes($count);
+        $onlyIfNewEvents = (bool) $this->option('only-if-new-events');
 
         $created = 0;
         foreach ($types as $type) {
             $result = $type === 'whats-on'
-                ? $this->createWhatsOn($blog, $autoPublish)
+                ? $this->createWhatsOn($blog, $autoPublish, $onlyIfNewEvents)
                 : $this->createHowTo($blog, $autoPublish);
 
             if ($result) {
@@ -88,9 +93,14 @@ class GenerateAiBlogPosts extends Command
         return $this->storeArticle($data, $autoPublish, 'blog');
     }
 
-    private function createWhatsOn(AiBlogService $blog, bool $autoPublish): ?string
+    private function createWhatsOn(AiBlogService $blog, bool $autoPublish, bool $onlyIfNewEvents = false): ?string
     {
-        $region = $this->getWhatsOnRegion();
+        $newestEvent = $onlyIfNewEvents ? $this->newestEventSinceLastRoundup() : null;
+        if ($onlyIfNewEvents && !$newestEvent) {
+            return null;
+        }
+
+        $region = $newestEvent?->region ?: $this->getWhatsOnRegion();
         $events = $this->getUpcomingEventsForRegion($region);
 
         if (empty($events)) {
@@ -102,7 +112,8 @@ class GenerateAiBlogPosts extends Command
             return null;
         }
 
-        $data = $blog->generateWhatsOn($region, $events);
+        $data = $blog->generateWhatsOn($region, $events)
+            ?: $this->buildWhatsOnFallback($region ?: 'Ghana', $events);
         if (!$data) {
             return null;
         }
@@ -131,10 +142,19 @@ class GenerateAiBlogPosts extends Command
         $recentExists = Article::where('type', $type)
             ->where('title', $title)
             ->where('created_at', '>=', now()->subDays(30))
-            ->exists();
+            ->first();
 
         if ($recentExists) {
-            return null;
+            $recentExists->update([
+                'description' => $data['summary'] ?? '',
+                'content' => $data['content'] ?? '',
+                'meta_title' => $data['meta_title'] ?? null,
+                'meta_description' => $data['meta_description'] ?? null,
+                'is_published' => $autoPublish || $recentExists->is_published,
+                'published_at' => $autoPublish ? now() : $recentExists->published_at,
+            ]);
+
+            return $recentExists->title . ' (updated)';
         }
 
         $article = Article::create([
@@ -189,7 +209,7 @@ class GenerateAiBlogPosts extends Command
         return Event::approved()
             ->upcoming()
             ->where('region', $region)
-            ->whereBetween('start_date', [now(), now()->addDays(7)])
+            ->whereBetween('start_date', [now(), now()->addDays(30)])
             ->orderBy('start_date')
             ->limit(6)
             ->get()
@@ -208,7 +228,7 @@ class GenerateAiBlogPosts extends Command
     {
         return Event::approved()
             ->upcoming()
-            ->whereBetween('start_date', [now(), now()->addDays(7)])
+            ->whereBetween('start_date', [now(), now()->addDays(30)])
             ->orderBy('start_date')
             ->limit(6)
             ->get()
@@ -221,5 +241,58 @@ class GenerateAiBlogPosts extends Command
                 ];
             })
             ->toArray();
+    }
+
+    private function newestEventSinceLastRoundup(): ?Event
+    {
+        $latestRoundup = Article::where('type', 'blog')
+            ->where('category', 'whats-on')
+            ->where('is_published', true)
+            ->latest('published_at')
+            ->first();
+
+        $query = Event::approved()
+            ->upcoming()
+            ->whereBetween('start_date', [now(), now()->addDays(30)])
+            ->orderByDesc('approved_at')
+            ->orderByDesc('updated_at');
+
+        if ($latestRoundup) {
+            $since = $latestRoundup->published_at ?: $latestRoundup->created_at;
+            $query->where(function ($builder) use ($since) {
+                $builder->where('approved_at', '>', $since)
+                    ->orWhere('updated_at', '>', $since);
+            });
+        }
+
+        return $query->first();
+    }
+
+    private function buildWhatsOnFallback(string $region, array $events): array
+    {
+        $range = now()->format('M j') . '–' . now()->addDays(30)->format('M j, Y');
+        $title = "Upcoming Events in {$region}: {$range}";
+
+        $lines = collect($events)->map(function ($event) {
+            $details = array_filter([
+                $event['date'] ?? null,
+                $event['venue'] ?? null,
+            ]);
+
+            return ($event['title'] ?? 'Upcoming event')
+                . ($details ? ' — ' . implode(', ', $details) : '')
+                . (!empty($event['url']) ? "\n" . $event['url'] : '');
+        })->implode("\n\n");
+
+        $summary = "Discover upcoming events in {$region}, including dates, venues and direct booking links on 9yt !Trybe.";
+
+        return [
+            'title' => $title,
+            'summary' => $summary,
+            'content' => "What’s happening in {$region}\n\n{$lines}\n\nExplore current event details and ticket availability on 9yt !Trybe.",
+            'meta_title' => Str::limit("Upcoming Events in {$region} | 9yt !Trybe", 60, ''),
+            'meta_description' => Str::limit($summary, 155, ''),
+            'category' => 'whats-on',
+        ];
     }
 }

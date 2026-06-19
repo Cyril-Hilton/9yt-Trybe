@@ -26,6 +26,6 @@ class ShopProductObserver
         }
 
         $url = url('/shop/' . $product->slug);
-        app(IndexNowService::class)->submitUrls([$url]);
+        app(IndexNowService::class)->queueUrls([$url]);
     }
 }

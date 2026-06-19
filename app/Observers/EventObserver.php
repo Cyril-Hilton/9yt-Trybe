@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Event;
+use App\Services\SEO\EventSeoAutomation;
 use App\Services\SEO\IndexNowService;
 
 class EventObserver
@@ -30,6 +31,7 @@ class EventObserver
             return;
         }
 
-        app(IndexNowService::class)->submitUrls([$url]);
+        app(EventSeoAutomation::class)->prepare($event);
+        app(IndexNowService::class)->queueUrls([$url]);
     }
 }

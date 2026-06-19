@@ -26,6 +26,6 @@ class PollObserver
         }
 
         $url = $poll->public_url;
-        app(IndexNowService::class)->submitUrls([$url]);
+        app(IndexNowService::class)->queueUrls([$url]);
     }
 }
