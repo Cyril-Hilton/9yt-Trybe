@@ -13,6 +13,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class EventController extends Controller
 {
@@ -37,39 +39,18 @@ class EventController extends Controller
 
         $company = Auth::guard('company')->user();
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'summary' => 'nullable|string|max:500',
-            'overview' => 'nullable|string',
-            'event_type' => 'required|in:single,recurring',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'region' => 'required|string',
-            'location_type' => 'required|in:venue,online,tba',
-            'venue_name' => 'required_if:location_type,venue|nullable|string',
-            'venue_address' => 'required_if:location_type,venue|nullable|string',
-            'venue_latitude' => 'nullable|numeric',
-            'venue_longitude' => 'nullable|numeric',
-            'online_platform' => 'required_if:location_type,online|nullable|string',
-            'online_link' => 'nullable|url',
-            'online_meeting_details' => 'nullable|string',
-            'banner_image' => 'nullable|image',
-            'images.*' => 'nullable|image',
-            'age_restriction' => 'nullable|string',
-            'door_time' => 'nullable',
-            'parking_info' => 'nullable|string',
-            'fee_bearer' => 'required|in:organizer,attendee',
-            'categories' => 'nullable|array',
-            'categories.*' => 'exists:categories,id',
-            'is_holiday' => 'nullable|boolean',
-            'holiday_name' => 'nullable|string|max:255',
-            'holiday_country' => 'nullable|string|max:255',
-        ]);
+        $validated = $this->validateEventPayload($request);
+        $requiresTicket = $request->input('action') === 'publish';
+        $tickets = $this->validatedTicketPayload($request, $requiresTicket);
 
-        DB::transaction(function () use ($validated, $company, $request) {
+        DB::transaction(function () use ($validated, $company, $request, $tickets) {
             // Handle banner upload
             if ($request->hasFile('banner_image')) {
-                $validated['banner_image'] = $request->file('banner_image')->store('events/banners', 'public');
+                $validated['banner_image'] = $this->storePublicUpload(
+                    $request->file('banner_image'),
+                    'events/banners',
+                    'banner_image'
+                );
             }
 
             // Determine status based on action - organizers submit for admin approval
@@ -89,7 +70,7 @@ class EventController extends Controller
             // Handle images
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $index => $imageFile) {
-                    $imagePath = $imageFile->store('events/images', 'public');
+                    $imagePath = $this->storePublicUpload($imageFile, 'events/images', 'images.' . $index);
                     EventImage::create([
                         'event_id' => $event->id,
                         'image_path' => $imagePath,
@@ -101,6 +82,11 @@ class EventController extends Controller
             // Handle videos
             if ($request->has('videos')) {
                 foreach ($request->input('videos', []) as $index => $videoUrl) {
+                    $videoUrl = trim((string) $videoUrl);
+                    if ($videoUrl === '') {
+                        continue;
+                    }
+
                     $platform = EventVideo::detectPlatform($videoUrl);
                     if ($platform) {
                         $videoId = EventVideo::extractVideoId($videoUrl, $platform);
@@ -118,11 +104,14 @@ class EventController extends Controller
             // Handle FAQs
             if ($request->has('faqs')) {
                 foreach ($request->input('faqs', []) as $index => $faq) {
-                    if (!empty($faq['question']) && !empty($faq['answer'])) {
+                    $question = trim((string) ($faq['question'] ?? ''));
+                    $answer = trim((string) ($faq['answer'] ?? ''));
+
+                    if ($question !== '' && $answer !== '') {
                         EventFaq::create([
                             'event_id' => $event->id,
-                            'question' => $faq['question'],
-                            'answer' => $faq['answer'],
+                            'question' => $question,
+                            'answer' => $answer,
                             'order' => $index,
                         ]);
                     }
@@ -132,6 +121,10 @@ class EventController extends Controller
             // Handle sections
             if ($request->has('sections')) {
                 foreach ($request->input('sections', []) as $index => $section) {
+                    if (empty($section['name']) || empty($section['capacity'])) {
+                        continue;
+                    }
+
                     EventSection::create([
                         'event_id' => $event->id,
                         'name' => $section['name'],
@@ -142,8 +135,8 @@ class EventController extends Controller
             }
 
             // Handle tickets
-            if ($request->has('tickets')) {
-                foreach ($request->input('tickets', []) as $index => $ticket) {
+            if ($tickets !== []) {
+                foreach ($tickets as $index => $ticket) {
                     EventTicket::create([
                         'event_id' => $event->id,
                         'event_section_id' => $ticket['section_id'] ?? null,
@@ -202,43 +195,21 @@ class EventController extends Controller
     {
         $this->authorize('update', $event);
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'summary' => 'nullable|string|max:500',
-            'overview' => 'nullable|string',
-            'event_type' => 'required|in:single,recurring',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'region' => 'required|string',
-            'location_type' => 'required|in:venue,online,tba',
-            'venue_name' => 'required_if:location_type,venue|nullable|string',
-            'venue_address' => 'required_if:location_type,venue|nullable|string',
-            'venue_latitude' => 'nullable|numeric',
-            'venue_longitude' => 'nullable|numeric',
-            'online_platform' => 'required_if:location_type,online|nullable|string',
-            'online_link' => 'nullable|url',
-            'online_meeting_details' => 'nullable|string',
-            'banner_image' => 'nullable|image',
-            'images.*' => 'nullable|image',
-            'age_restriction' => 'nullable|string',
-            'door_time' => 'nullable',
-            'parking_info' => 'nullable|string',
-            'fee_bearer' => 'required|in:organizer,attendee',
-            'categories' => 'nullable|array',
-            'categories.*' => 'exists:categories,id',
-            'is_holiday' => 'nullable|boolean',
-            'holiday_name' => 'nullable|string|max:255',
-            'holiday_country' => 'nullable|string|max:255',
-        ]);
+        $validated = $this->validateEventPayload($request);
+        $tickets = $this->validatedTicketPayload($request, false);
 
-        DB::transaction(function () use ($validated, $event, $request) {
+        DB::transaction(function () use ($validated, $event, $request, $tickets) {
             // Handle banner upload
             if ($request->hasFile('banner_image')) {
                 // Delete old banner
                 if ($event->banner_image) {
                     Storage::disk('public')->delete($event->banner_image);
                 }
-                $validated['banner_image'] = $request->file('banner_image')->store('events/banners', 'public');
+                $validated['banner_image'] = $this->storePublicUpload(
+                    $request->file('banner_image'),
+                    'events/banners',
+                    'banner_image'
+                );
             }
 
             // Update event
@@ -262,7 +233,7 @@ class EventController extends Controller
 
                 // Upload new images
                 foreach ($request->file('images') as $index => $imageFile) {
-                    $imagePath = $imageFile->store('events/images', 'public');
+                    $imagePath = $this->storePublicUpload($imageFile, 'events/images', 'images.' . $index);
                     EventImage::create([
                         'event_id' => $event->id,
                         'image_path' => $imagePath,
@@ -275,6 +246,11 @@ class EventController extends Controller
             $event->videos()->delete();
             if ($request->has('videos')) {
                 foreach ($request->input('videos', []) as $index => $videoUrl) {
+                    $videoUrl = trim((string) $videoUrl);
+                    if ($videoUrl === '') {
+                        continue;
+                    }
+
                     $platform = EventVideo::detectPlatform($videoUrl);
                     if ($platform) {
                         $videoId = EventVideo::extractVideoId($videoUrl, $platform);
@@ -293,11 +269,14 @@ class EventController extends Controller
             $event->faqs()->delete();
             if ($request->has('faqs')) {
                 foreach ($request->input('faqs', []) as $index => $faq) {
-                    if (!empty($faq['question']) && !empty($faq['answer'])) {
+                    $question = trim((string) ($faq['question'] ?? ''));
+                    $answer = trim((string) ($faq['answer'] ?? ''));
+
+                    if ($question !== '' && $answer !== '') {
                         EventFaq::create([
                             'event_id' => $event->id,
-                            'question' => $faq['question'],
-                            'answer' => $faq['answer'],
+                            'question' => $question,
+                            'answer' => $answer,
                             'order' => $index,
                         ]);
                     }
@@ -308,6 +287,10 @@ class EventController extends Controller
             $event->sections()->delete();
             if ($request->has('sections')) {
                 foreach ($request->input('sections', []) as $index => $section) {
+                    if (empty($section['name']) || empty($section['capacity'])) {
+                        continue;
+                    }
+
                     EventSection::create([
                         'event_id' => $event->id,
                         'name' => $section['name'],
@@ -321,8 +304,8 @@ class EventController extends Controller
             // Note: Only do this if no tickets have been sold
             if ($event->tickets_sold == 0) {
                 $event->tickets()->delete();
-                if ($request->has('tickets')) {
-                    foreach ($request->input('tickets', []) as $index => $ticket) {
+                if ($tickets !== []) {
+                    foreach ($tickets as $index => $ticket) {
                         EventTicket::create([
                             'event_id' => $event->id,
                             'event_section_id' => $ticket['section_id'] ?? null,
@@ -346,6 +329,161 @@ class EventController extends Controller
 
         return redirect()->route('organization.events.show', $event)
             ->with('success', 'Event updated successfully!');
+    }
+
+    private function validateEventPayload(Request $request): array
+    {
+        return $request->validate([
+            'title' => 'required|string|max:255',
+            'summary' => 'nullable|string|max:500',
+            'overview' => 'nullable|string',
+            'event_type' => 'required|in:single,recurring',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after:start_date',
+            'region' => 'required|string',
+            'location_type' => 'required|in:venue,online,tba',
+            'venue_name' => 'required_if:location_type,venue|nullable|string',
+            'venue_address' => 'required_if:location_type,venue|nullable|string',
+            'venue_latitude' => 'nullable|numeric',
+            'venue_longitude' => 'nullable|numeric',
+            'online_platform' => 'required_if:location_type,online|nullable|string',
+            'online_link' => 'nullable|url',
+            'online_meeting_details' => 'nullable|string',
+            'banner_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:20480',
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:20480',
+            'videos' => 'nullable|array',
+            'videos.*' => 'nullable|url',
+            'faqs' => 'nullable|array',
+            'faqs.*.question' => 'nullable|string|max:255',
+            'faqs.*.answer' => 'nullable|string',
+            'age_restriction' => 'nullable|string',
+            'door_time' => 'nullable',
+            'parking_info' => 'nullable|string',
+            'fee_bearer' => 'required|in:organizer,attendee',
+            'categories' => 'nullable|array',
+            'categories.*' => 'exists:categories,id',
+            'is_holiday' => 'nullable|boolean',
+            'holiday_name' => 'nullable|string|max:255',
+            'holiday_country' => 'nullable|string|max:255',
+        ], [
+            'banner_image.image' => 'The event flier must be an image file.',
+            'banner_image.mimes' => 'The event flier must be a JPG, PNG, WEBP, or GIF image.',
+            'banner_image.max' => 'The event flier is too large. Please upload an image that is 20 MB or smaller.',
+            'images.*.image' => 'Every event gallery file must be an image.',
+            'images.*.mimes' => 'Event gallery images must be JPG, PNG, WEBP, or GIF files.',
+            'images.*.max' => 'Each event gallery image must be 20 MB or smaller.',
+        ]);
+    }
+
+    private function validatedTicketPayload(Request $request, bool $requiresTicket): array
+    {
+        $rawTickets = $request->input('tickets', []);
+
+        if (!is_array($rawTickets)) {
+            $rawTickets = [];
+        }
+
+        Validator::make(['tickets' => $rawTickets], [
+            'tickets' => 'nullable|array',
+            'tickets.*.name' => 'nullable|string|max:255',
+            'tickets.*.description' => 'nullable|string',
+            'tickets.*.type' => 'nullable|in:paid,free,donation',
+            'tickets.*.price' => 'nullable|numeric|min:0',
+            'tickets.*.min_donation' => 'nullable|numeric|min:0',
+            'tickets.*.quantity' => 'nullable|integer|min:1',
+            'tickets.*.min_per_order' => 'nullable|integer|min:1',
+            'tickets.*.max_per_order' => 'nullable|integer|min:1',
+            'tickets.*.sales_start' => 'nullable|date',
+            'tickets.*.sales_end' => 'nullable|date',
+        ])->validate();
+
+        $tickets = [];
+        $errors = [];
+
+        foreach ($rawTickets as $index => $ticket) {
+            if (!is_array($ticket)) {
+                continue;
+            }
+
+            $name = trim((string) ($ticket['name'] ?? ''));
+            $description = trim((string) ($ticket['description'] ?? ''));
+            $type = (string) ($ticket['type'] ?? 'paid');
+            $price = $ticket['price'] ?? null;
+            $minDonation = $ticket['min_donation'] ?? null;
+            $quantity = $ticket['quantity'] ?? null;
+            $salesStart = $ticket['sales_start'] ?? null;
+            $salesEnd = $ticket['sales_end'] ?? null;
+
+            $hasAnyTicketInput = $name !== ''
+                || $description !== ''
+                || $this->hasInputValue($price)
+                || $this->hasInputValue($minDonation)
+                || $this->hasInputValue($quantity)
+                || $this->hasInputValue($salesStart)
+                || $this->hasInputValue($salesEnd);
+
+            if (!$hasAnyTicketInput) {
+                continue;
+            }
+
+            if ($name === '') {
+                $errors["tickets.$index.name"] = 'Add a ticket name or remove the blank ticket row.';
+            }
+
+            if ($type === 'paid' && !$this->hasInputValue($price)) {
+                $errors["tickets.$index.price"] = 'Add a price for paid tickets, choose Free, or remove the blank ticket row.';
+            }
+
+            $minPerOrder = max(1, (int) ($ticket['min_per_order'] ?? 1));
+            $maxPerOrder = max(1, (int) ($ticket['max_per_order'] ?? 10));
+
+            if ($maxPerOrder < $minPerOrder) {
+                $errors["tickets.$index.max_per_order"] = 'Max tickets per order must be greater than or equal to the minimum.';
+            }
+
+            $tickets[] = [
+                'section_id' => $ticket['section_id'] ?? null,
+                'name' => $name,
+                'description' => $description !== '' ? $description : null,
+                'type' => $type,
+                'price' => $type === 'free' ? 0 : (float) ($price ?? 0),
+                'min_donation' => $type === 'donation' ? (float) ($minDonation ?? 0) : null,
+                'quantity' => $this->hasInputValue($quantity) ? (int) $quantity : null,
+                'min_per_order' => $minPerOrder,
+                'max_per_order' => $maxPerOrder,
+                'sales_start' => $this->hasInputValue($salesStart) ? $salesStart : null,
+                'sales_end' => $this->hasInputValue($salesEnd) ? $salesEnd : null,
+            ];
+        }
+
+        if ($requiresTicket && $tickets === []) {
+            $errors['tickets'] = 'Add at least one ticket before publishing, or save the event as a draft.';
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        return $tickets;
+    }
+
+    private function hasInputValue(mixed $value): bool
+    {
+        return $value !== null && trim((string) $value) !== '';
+    }
+
+    private function storePublicUpload($file, string $directory, string $field): string
+    {
+        $path = $file->store($directory, 'public');
+
+        if (!$path) {
+            throw ValidationException::withMessages([
+                $field => 'The image could not be saved. Please try again or upload a smaller image.',
+            ]);
+        }
+
+        return $path;
     }
 
     public function destroy(Event $event)

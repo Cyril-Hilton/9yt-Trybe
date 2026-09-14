@@ -16,8 +16,30 @@
             <p class="mt-2 text-gray-600">Fill in the details to create your event</p>
         </div>
 
-        <form action="{{ route('organization.events.store') }}" method="POST" enctype="multipart/form-data">
+        <form x-ref="eventForm"
+              action="{{ route('organization.events.store') }}"
+              method="POST"
+              enctype="multipart/form-data"
+              @submit="handleSubmit($event)">
             @csrf
+
+            <div x-show="submitError"
+                 x-cloak
+                 class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800"
+                 role="alert">
+                <span x-text="submitError"></span>
+            </div>
+
+            @if($errors->any())
+                <div class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+                    <p class="font-bold">Please fix the following before creating the event:</p>
+                    <ul class="mt-2 list-disc list-inside space-y-1">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
             <!-- Basic Information -->
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -148,8 +170,10 @@
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Event Flier Image</label>
                     <input type="file" name="banner_image" accept="image/*"
+                           @change="validateImageInput($event, 'Event flier')"
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    <p class="mt-1 text-xs text-gray-500">Recommended: 900x370px</p>
+                    <p class="mt-1 text-xs text-gray-500">Recommended: 900x370px. JPG, PNG, WEBP, or GIF. Max 20 MB.</p>
+                    <p x-show="flierFileName" x-cloak class="mt-1 text-xs font-semibold text-indigo-700" x-text="flierFileName"></p>
                     @error('banner_image')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
 
@@ -157,8 +181,9 @@
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Event Images (Optional)</label>
                     <input type="file" name="images[]" accept="image/*" multiple
+                           @change="validateImageInput($event, 'Event gallery image')"
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    <p class="mt-1 text-xs text-gray-500">You can upload multiple images.</p>
+                    <p class="mt-1 text-xs text-gray-500">You can upload multiple images. Each image must be 20 MB or smaller.</p>
                     @error('images.*')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
             </div>
@@ -541,19 +566,23 @@
             </div>
 
             <!-- Actions -->
-            <div class="flex justify-between items-center">
+            <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
                 <a href="{{ route('organization.events.index') }}"
-                   class="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition">
+                   class="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition text-center">
                     Cancel
                 </a>
-                <div class="flex space-x-3">
-                    <button type="submit" name="action" value="draft"
-                            class="px-6 py-3 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition">
-                        Save as Draft
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button type="submit" name="action" value="draft" formnovalidate
+                            :disabled="submitting"
+                            class="px-6 py-3 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span x-show="!submitting">Save as Draft</span>
+                        <span x-show="submitting" x-cloak>Saving...</span>
                     </button>
                     <button type="submit" name="action" value="publish"
-                            class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition shadow-lg">
-                        Create & Publish
+                            :disabled="submitting"
+                            class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span x-show="!submitting">Create & Publish</span>
+                        <span x-show="submitting" x-cloak>Creating...</span>
                     </button>
                 </div>
             </div>
@@ -565,7 +594,80 @@
 function eventForm() {
     return {
         eventType: 'single',
-        locationType: 'venue'
+        locationType: 'venue',
+        submitting: false,
+        submitError: '',
+        flierFileName: '',
+        maxImageBytes: 20 * 1024 * 1024,
+        allowedImageTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+        init() {
+            this.$nextTick(() => {
+                const form = this.$refs.eventForm;
+                if (!form) return;
+
+                form.addEventListener('invalid', (event) => {
+                    event.preventDefault();
+                    this.showFieldError(event.target);
+                }, true);
+            });
+        },
+        validateImageInput(event, label) {
+            this.submitError = '';
+            const input = event.target;
+            const files = Array.from(input.files || []);
+
+            for (const file of files) {
+                if (!this.allowedImageTypes.includes(file.type)) {
+                    input.value = '';
+                    this.flierFileName = '';
+                    this.submitError = `${label} must be a JPG, PNG, WEBP, or GIF image.`;
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    input.focus();
+                    return false;
+                }
+
+                if (file.size > this.maxImageBytes) {
+                    input.value = '';
+                    this.flierFileName = '';
+                    this.submitError = `${label} is too large. Please upload an image that is 20 MB or smaller.`;
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    input.focus();
+                    return false;
+                }
+            }
+
+            if (input.name === 'banner_image') {
+                this.flierFileName = files[0] ? `${files[0].name} selected` : '';
+            }
+
+            return true;
+        },
+        handleSubmit(event) {
+            this.submitError = '';
+
+            const fileInputs = Array.from(event.target.querySelectorAll('input[type="file"]'));
+            const filesAreValid = fileInputs.every((input) => {
+                if (!input.files || input.files.length === 0) return true;
+
+                return this.validateImageInput({ target: input }, input.name === 'banner_image' ? 'Event flier' : 'Event gallery image');
+            });
+
+            if (!filesAreValid) {
+                event.preventDefault();
+                return;
+            }
+
+            this.submitting = true;
+        },
+        showFieldError(field) {
+            const label = field.closest('div')?.querySelector('label')?.textContent?.replace('*', '').trim();
+            this.submitError = label
+                ? `Please check "${label}" before creating the event.`
+                : 'Please complete the highlighted field before creating the event.';
+            field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            field.focus({ preventScroll: true });
+            this.submitting = false;
+        }
     }
 }
 

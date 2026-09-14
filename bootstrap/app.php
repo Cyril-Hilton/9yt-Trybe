@@ -53,6 +53,20 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        $exceptions->renderable(function (\Illuminate\Http\Exceptions\PostTooLargeException $exception, Request $request) {
+            $message = 'The uploaded file is too large. Please compress the event flier or upload an image under the server limit, then try again.';
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $message,
+                ], 413);
+            }
+
+            return redirect()
+                ->back()
+                ->with('error', $message);
+        });
+
         $exceptions->renderable(function (TokenMismatchException $exception, Request $request) {
             if ($request->expectsJson()) {
                 return response()->json([
