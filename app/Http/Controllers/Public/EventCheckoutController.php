@@ -72,6 +72,7 @@ class EventCheckoutController extends Controller
             'attendees.*.name' => 'required|string|max:255',
             'attendees.*.email' => 'required|email',
             'attendees.*.ticket_id' => 'required|integer|exists:event_tickets,id',
+            'attendees.*.transport_reserved' => 'nullable|boolean',
             'payment_method' => 'nullable|string|in:card,mobile_money,all',
         ]);
 
@@ -85,6 +86,13 @@ class EventCheckoutController extends Controller
             return back()
                 ->withInput()
                 ->with('error', implode(', ', $availabilityCheck['errors']));
+        }
+
+        if (!$event->transportation_enabled) {
+            foreach ($validated['attendees'] as &$attendee) {
+                $attendee['transport_reserved'] = false;
+            }
+            unset($attendee);
         }
 
         // Calculate order total

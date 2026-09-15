@@ -22,6 +22,8 @@ class EventAttendeeController extends Controller
             'total_attendees' => $event->attendees()->count(),
             'checked_in' => $event->attendees()->where('checked_in', true)->count(),
             'not_checked_in' => $event->attendees()->where('checked_in', false)->count(),
+            'transport_reserved' => $event->attendees()->where('transport_reserved', true)->count(),
+            'transport_badges' => $event->attendees()->where('transport_reserved', true)->max('transport_badge_number') ?? 0,
         ];
 
         return view('company.events.attendees.index', compact('event', 'attendees', 'stats'));
@@ -51,7 +53,7 @@ class EventAttendeeController extends Controller
         $attendees = $event->attendees()->with(['ticket', 'order'])->get();
 
         $csvData = [];
-        $csvData[] = ['Ticket Code', 'Name', 'Email', 'Ticket Type', 'Price Paid', 'Order Number', 'Checked In', 'Purchase Date'];
+        $csvData[] = ['Ticket Code', 'Name', 'Email', 'Ticket Type', 'Price Paid', 'Order Number', 'Transport Reserved', 'Transport Badge', 'Seat Number', 'Checked In', 'Purchase Date'];
 
         foreach ($attendees as $attendee) {
             $csvData[] = [
@@ -61,6 +63,9 @@ class EventAttendeeController extends Controller
                 $attendee->ticket->name,
                 'GH₵ ' . number_format($attendee->price_paid, 2),
                 $attendee->order->order_number,
+                $attendee->transport_reserved ? 'Yes' : 'No',
+                $attendee->transport_badge_number ?? '',
+                $attendee->transport_seat_number ?? '',
                 $attendee->checked_in ? 'Yes' : 'No',
                 $attendee->created_at->format('Y-m-d H:i'),
             ];

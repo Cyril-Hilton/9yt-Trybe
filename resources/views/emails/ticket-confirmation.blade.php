@@ -632,8 +632,11 @@
                             <div class="attendee-info">
                                 <p class="attendee-name">{{ $attendee->attendee_name }}</p>
                                 <p class="attendee-email">{{ $attendee->attendee_email }}</p>
+                                @if($attendee->transport_reserved)
+                                <p style="color: #0e7490; font-weight: 700; margin-top: 8px;">Coaster Bus: Badge {{ $attendee->transport_badge_number }} · Seat {{ $attendee->transport_seat_number }}</p>
+                                @endif
                                 @if($attendee->price_paid > 0)
-                                <p style="color: #4f46e5; font-weight: 600; margin-top: 8px;">GH₵{{ number_format($attendee->price_paid, 2) }}</p>
+                                <p style="color: #4f46e5; font-weight: 600; margin-top: 8px;">{{ formatPrice($attendee->price_paid) }}</p>
                                 @endif
                             </div>
 
@@ -699,20 +702,20 @@
 
                 <div class="summary-row">
                     <span style="color: #64748b;">Subtotal</span>
-                    <span style="font-weight: 600;">GH₵{{ number_format($order->subtotal, 2) }}</span>
+                    <span style="font-weight: 600;">{{ formatPrice($order->subtotal) }}</span>
                 </div>
 
                 @if($order->service_fee > 0)
                 <div class="summary-row">
                     <span style="color: #64748b;">Service Fee</span>
-                    <span style="font-weight: 600;">GH₵{{ number_format($order->service_fee, 2) }}</span>
+                    <span style="font-weight: 600;">{{ formatPrice($order->service_fee) }}</span>
                 </div>
                 @endif
 
                 @if($order->processing_fee > 0)
                 <div class="summary-row">
                     <span style="color: #64748b;">Processing Fee</span>
-                    <span style="font-weight: 600;">GH₵{{ number_format($order->processing_fee, 2) }}</span>
+                    <span style="font-weight: 600;">{{ formatPrice($order->processing_fee) }}</span>
                 </div>
                 @endif
 
@@ -729,6 +732,9 @@
                     @if($order->event->location_type === 'venue')
                     <li>Please arrive at least 15 minutes before the event starts</li>
                     <li>Present your QR code or ticket code at the entrance for check-in</li>
+                    @endif
+                    @if($order->attendees->where('transport_reserved', true)->isNotEmpty())
+                    <li>Your Coaster Bus seat is reserved. The bus runs from 4:00 PM until midnight for trips to and from the event. {{ $order->event->transport_pickup_details ?: 'Pickup details will be shared by the organizer.' }}</li>
                     @endif
                     @if($order->event->age_restriction)
                     <li>Age Restriction: {{ $order->event->age_restriction }}</li>

@@ -42,6 +42,9 @@ class Event extends Model
         'age_restriction',
         'door_time',
         'parking_info',
+        'transportation_enabled',
+        'transport_seat_capacity',
+        'transport_pickup_details',
         'status',
         'rejection_reason',
         'approved_at',
@@ -76,6 +79,8 @@ class Event extends Model
         'venue_longitude' => 'decimal:8',
         'is_external' => 'boolean',
         'is_holiday' => 'boolean',
+        'transportation_enabled' => 'boolean',
+        'transport_seat_capacity' => 'integer',
         'ai_tags' => 'array',
         'ai_faqs' => 'array',
     ];
@@ -131,6 +136,25 @@ class Event extends Model
     public function attendees()
     {
         return $this->hasMany(EventAttendee::class);
+    }
+
+    public function transportReservations()
+    {
+        return $this->attendees()->where('transport_reserved', true);
+    }
+
+    public function getTransportSeatsReservedAttribute(): int
+    {
+        return $this->transportReservations()->count();
+    }
+
+    public function getTransportSeatsRemainingAttribute(): ?int
+    {
+        if (!$this->transportation_enabled || $this->transport_seat_capacity === null) {
+            return null;
+        }
+
+        return max(0, $this->transport_seat_capacity - $this->transport_seats_reserved);
     }
 
     public function likes()

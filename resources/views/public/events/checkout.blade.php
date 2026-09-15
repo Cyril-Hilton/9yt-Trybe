@@ -174,6 +174,19 @@
                                             </div>
 
                                             <input type="hidden" name="attendees[{{ $attendeeIndex }}][ticket_id]" value="{{ $ticket->id }}">
+
+                                            @if($event->transportation_enabled)
+                                            <label class="mt-4 flex items-start gap-3 rounded-xl border border-cyan-200 bg-cyan-50/70 p-4 cursor-pointer dark:border-cyan-800/70 dark:bg-cyan-900/20">
+                                                <input type="hidden" name="attendees[{{ $attendeeIndex }}][transport_reserved]" value="0">
+                                                <input type="checkbox" name="attendees[{{ $attendeeIndex }}][transport_reserved]" value="1"
+                                                       @checked(old('attendees.' . $attendeeIndex . '.transport_reserved'))
+                                                       class="mt-1 h-4 w-4 rounded border-cyan-400 text-cyan-600 focus:ring-cyan-500">
+                                                <span>
+                                                    <span class="block text-sm font-semibold text-cyan-950 dark:text-cyan-100">Reserve a seat on the Vixens and Velocity Coaster Bus</span>
+                                                    <span class="mt-1 block text-xs text-cyan-800 dark:text-cyan-300">Optional — leave this unchecked if this attendee will make their own way to the venue. The bus runs from 4:00 PM to midnight for journeys to and from the event. Your private transport badge and seat number will be sent by email.</span>
+                                                </span>
+                                            </label>
+                                            @endif
                                         </div>
 
                                         @php $attendeeIndex++; @endphp
@@ -223,7 +236,7 @@
                                                 <p class="font-semibold text-gray-800 dark:text-gray-200">{{ $ticket->name }}</p>
                                                 <p class="text-xs text-cyan-600 dark:text-cyan-400">{{ $ticket->formatted_price }} × {{ $quantity }}</p>
                                             </div>
-                                            <p class="font-bold text-gray-900 dark:text-white">GH₵{{ number_format($ticketTotal, 2) }}</p>
+                                            <p class="font-bold text-gray-900 dark:text-white">{{ formatPrice($ticketTotal) }}</p>
                                         </div>
                                     @endif
                                 @endforeach
@@ -233,7 +246,7 @@
                             <div class="space-y-2 text-sm mb-4">
                                 <div class="flex justify-between text-gray-700 dark:text-gray-300">
                                     <span>Subtotal</span>
-                                    <span>GH₵{{ number_format($subtotal, 2) }}</span>
+                                    <span>{{ formatPrice($subtotal) }}</span>
                                 </div>
 
                                 @if($event->fee_bearer === 'attendee' && $subtotal > 0)
@@ -246,11 +259,11 @@
                                     @endphp
                                     <div class="flex justify-between text-gray-700 dark:text-gray-300">
                                         <span>Payment Gateway Fee</span>
-                                        <span>GH₵{{ number_format($gatewayFee, 2) }}</span>
+                                        <span>{{ formatPrice($gatewayFee) }}</span>
                                     </div>
                                     <div class="flex justify-between text-gray-700 dark:text-gray-300">
                                         <span>VAT on Gateway Fee ({{ $vatRate }}%)</span>
-                                        <span>GH₵{{ number_format($vat, 2) }}</span>
+                                        <span>{{ formatPrice($vat) }}</span>
                                     </div>
                                 @else
                                     @php
@@ -266,7 +279,7 @@
 
                                 <div class="flex justify-between text-lg font-bold text-gray-900 dark:text-white pt-3 border-t border-cyan-200/50 dark:border-cyan-800/30">
                                     <span>Total</span>
-                                    <span class="text-emerald-600 dark:text-emerald-400">GH₵{{ number_format($total, 2) }}</span>
+                                    <span class="text-emerald-600 dark:text-emerald-400">{{ formatPrice($total) }}</span>
                                 </div>
                             </div>
 

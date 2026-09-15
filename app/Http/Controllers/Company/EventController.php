@@ -333,7 +333,7 @@ class EventController extends Controller
 
     private function validateEventPayload(Request $request): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
             'summary' => 'nullable|string|max:500',
             'overview' => 'nullable|string',
@@ -360,6 +360,9 @@ class EventController extends Controller
             'age_restriction' => 'nullable|string',
             'door_time' => 'nullable',
             'parking_info' => 'nullable|string',
+            'transportation_enabled' => 'nullable|boolean',
+            'transport_seat_capacity' => 'nullable|integer|min:1|max:100',
+            'transport_pickup_details' => 'nullable|string|max:2000',
             'fee_bearer' => 'required|in:organizer,attendee',
             'categories' => 'nullable|array',
             'categories.*' => 'exists:categories,id',
@@ -374,6 +377,8 @@ class EventController extends Controller
             'images.*.mimes' => 'Event gallery images must be JPG, PNG, WEBP, or GIF files.',
             'images.*.max' => 'Each event gallery image must be 20 MB or smaller.',
         ]);
+
+        return $validated;
     }
 
     private function validatedTicketPayload(Request $request, bool $requiresTicket): array

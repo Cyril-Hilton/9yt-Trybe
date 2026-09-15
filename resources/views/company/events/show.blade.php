@@ -77,7 +77,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-gray-600 dark:text-gray-400">Revenue</p>
-                        <p class="text-3xl font-bold text-gray-900 dark:text-white">GH₵{{ number_format($stats['total_revenue'], 0) }}</p>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ formatPrice($stats['total_revenue']) }}</p>
                     </div>
                     <div class="p-3 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
                         <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -101,6 +101,21 @@
                 </div>
             </div>
         </div>
+
+        @if($event->transportation_enabled)
+        <div class="mb-6 rounded-xl border border-cyan-200 bg-cyan-50 p-5">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-cyan-950">Private Coaster Bus reservations</h2>
+                    <p class="mt-1 text-sm text-cyan-800">This information is visible only in the organizer dashboard. The public never sees seat availability.</p>
+                </div>
+                <div class="flex gap-6 text-right">
+                    <div><p class="text-xs font-semibold uppercase tracking-wide text-cyan-700">Reserved</p><p class="text-2xl font-bold text-cyan-950">{{ $event->transport_seats_reserved }}</p></div>
+                    <div><p class="text-xs font-semibold uppercase tracking-wide text-cyan-700">Bus badges</p><p class="text-2xl font-bold text-cyan-950">{{ $event->attendees->where('transport_reserved', true)->max('transport_badge_number') ?? 0 }}</p></div>
+                </div>
+            </div>
+        </div>
+        @endif
 
         <!-- Quick Actions -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">

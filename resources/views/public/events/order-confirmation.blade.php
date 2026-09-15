@@ -69,7 +69,10 @@
                                 <div class="flex-1">
                                     <p class="font-semibold text-gray-900">{{ $attendee->ticket->name }}</p>
                                     <p class="text-sm text-gray-600 mt-1">Ticket Code: <span class="font-mono font-bold text-indigo-600">{{ $attendee->ticket_code }}</span></p>
-                                    <p class="font-semibold text-gray-900 mt-2">GH₵{{ number_format($attendee->price_paid, 2) }}</p>
+                                    <p class="font-semibold text-gray-900 mt-2">{{ formatPrice($attendee->price_paid) }}</p>
+                                    @if($attendee->transport_reserved)
+                                    <p class="mt-2 inline-flex items-center rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold text-cyan-800">Transport Badge {{ $attendee->transport_badge_number }} · Seat {{ $attendee->transport_seat_number }}</p>
+                                    @endif
                                 </div>
                                 <div class="flex flex-col items-center gap-2">
                                     <div class="bg-white p-2 rounded-lg border-2 border-gray-300">
@@ -87,18 +90,18 @@
                 <div class="space-y-2">
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-600">Subtotal</span>
-                        <span class="font-semibold">GH₵{{ number_format($order->subtotal, 2) }}</span>
+                        <span class="font-semibold">{{ formatPrice($order->subtotal) }}</span>
                     </div>
                     @if($order->service_fee > 0)
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-600">Service Fee</span>
-                        <span class="font-semibold">GH₵{{ number_format($order->service_fee, 2) }}</span>
+                        <span class="font-semibold">{{ formatPrice($order->service_fee) }}</span>
                     </div>
                     @endif
                     @if($order->processing_fee > 0)
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-600">Processing Fee</span>
-                        <span class="font-semibold">GH₵{{ number_format($order->processing_fee, 2) }}</span>
+                        <span class="font-semibold">{{ formatPrice($order->processing_fee) }}</span>
                     </div>
                     @endif
                     <div class="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">

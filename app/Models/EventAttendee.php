@@ -16,6 +16,9 @@ class EventAttendee extends Model
         'attendee_name',
         'attendee_email',
         'attendee_phone',
+        'transport_reserved',
+        'transport_badge_number',
+        'transport_seat_number',
         'ticket_code',
         'qr_code_path',
         'price_paid',
@@ -28,6 +31,9 @@ class EventAttendee extends Model
     protected $casts = [
         'price_paid' => 'decimal:2',
         'checked_in' => 'boolean',
+        'transport_reserved' => 'boolean',
+        'transport_badge_number' => 'integer',
+        'transport_seat_number' => 'integer',
         'checked_in_at' => 'datetime',
     ];
 

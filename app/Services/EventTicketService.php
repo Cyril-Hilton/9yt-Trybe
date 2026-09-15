@@ -38,6 +38,8 @@ class EventTicketService
     public function createOrder(Event $event, array $orderData, array $tickets, array $attendees = []): EventOrder
     {
         return DB::transaction(function () use ($event, $orderData, $tickets, $attendees) {
+            $lockedEvent = Event::whereKey($event->id)->lockForUpdate()->firstOrFail();
+
             // Lock tickets to prevent race conditions (CRITICAL FIX #6)
             // This prevents two simultaneous purchases from overselling
             $ticketIds = !empty($attendees)
@@ -88,7 +90,16 @@ class EventTicketService
             if (!empty($attendees)) {
                 foreach ($attendees as $attendeeData) {
                     $ticket = $lockedTickets->get($attendeeData['ticket_id']);
-                    $this->createAttendee($order, $ticket, $attendeeData['name'], $attendeeData['email']);
+                    $transport = $this->nextTransportAssignment($lockedEvent, !empty($attendeeData['transport_reserved']));
+                    $this->createAttendee(
+                        $order,
+                        $ticket,
+                        $attendeeData['name'],
+                        $attendeeData['email'],
+                        $transport['reserved'],
+                        $transport['badge_number'],
+                        $transport['seat_number'],
+                    );
                 }
             } else {
                 // Fallback to old behavior if no attendees provided (for backward compatibility)
@@ -114,7 +125,7 @@ class EventTicketService
      * @param string|null $attendeeEmail
      * @return EventAttendee
      */
-    protected function createAttendee(EventOrder $order, EventTicket $ticket, ?string $attendeeName = null, ?string $attendeeEmail = null): EventAttendee
+    protected function createAttendee(EventOrder $order, EventTicket $ticket, ?string $attendeeName = null, ?string $attendeeEmail = null, bool $transportReserved = false, ?int $transportBadgeNumber = null, ?int $transportSeatNumber = null): EventAttendee
     {
         // Generate unique ticket code
         $ticketCode = $this->ticketGenerator->generateTicketCode();
@@ -126,6 +137,9 @@ class EventTicketService
             'event_id' => $order->event_id,
             'attendee_name' => $attendeeName ?? $order->customer_name,
             'attendee_email' => $attendeeEmail ?? $order->customer_email,
+            'transport_reserved' => $transportReserved && (bool) $order->event->transportation_enabled,
+            'transport_badge_number' => $transportBadgeNumber,
+            'transport_seat_number' => $transportSeatNumber,
             'ticket_code' => $ticketCode,
             'price_paid' => $ticket->isDonation() ? 0 : $ticket->price, // Will be updated if donation
             'status' => 'valid',
@@ -141,6 +155,32 @@ class EventTicketService
         }
 
         return $attendee;
+    }
+
+    /**
+     * Assign transport seats privately in the order reservations are confirmed.
+     * A 30-seat Coaster fills one badge before the next return trip begins.
+     */
+    protected function nextTransportAssignment(Event $event, bool $requested): array
+    {
+        if (!$requested || !$event->transportation_enabled) {
+            return ['reserved' => false, 'badge_number' => null, 'seat_number' => null];
+        }
+
+        $lastReservation = EventAttendee::where('event_id', $event->id)
+            ->where('transport_reserved', true)
+            ->orderByDesc('id')
+            ->first();
+
+        $capacity = $event->transport_seat_capacity ?? 30;
+        $lastBadge = $lastReservation?->transport_badge_number ?? 1;
+        $lastSeat = $lastReservation?->transport_seat_number ?? 0;
+
+        if ($lastSeat >= $capacity) {
+            return ['reserved' => true, 'badge_number' => $lastBadge + 1, 'seat_number' => 1];
+        }
+
+        return ['reserved' => true, 'badge_number' => $lastBadge, 'seat_number' => $lastSeat + 1];
     }
 
     /**

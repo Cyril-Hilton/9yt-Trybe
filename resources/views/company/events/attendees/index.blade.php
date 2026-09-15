@@ -30,7 +30,7 @@
         </div>
 
         <!-- Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-{{ $event->transportation_enabled ? '4' : '3' }} gap-6 mb-6">
             <div class="bg-white rounded-lg shadow-md p-6">
                 <div class="flex items-center justify-between">
                     <div>
@@ -44,6 +44,19 @@
                     </div>
                 </div>
             </div>
+
+            @if($event->transportation_enabled)
+            <div class="bg-cyan-50 border border-cyan-200 rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-cyan-800">Transport Reservations</p>
+                        <p class="text-3xl font-bold text-cyan-950">{{ $stats['transport_reserved'] }}</p>
+                        <p class="mt-1 text-xs text-cyan-700">{{ $stats['transport_badges'] }} badge{{ $stats['transport_badges'] === 1 ? '' : 's' }} scheduled</p>
+                    </div>
+                    <div class="p-3 bg-cyan-100 rounded-lg"><svg class="w-8 h-8 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16l2.879-2.879a3 3 0 014.242 0L16 14m-6 2h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
+                </div>
+            </div>
+            @endif
 
             <div class="bg-white rounded-lg shadow-md p-6">
                 <div class="flex items-center justify-between">
@@ -84,6 +97,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticket</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticket Code</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                            @if($event->transportation_enabled)<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transport</th>@endif
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -103,8 +117,17 @@
                                 <div class="text-sm font-mono font-bold text-indigo-600">{{ $attendee->ticket_code }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                GH₵{{ number_format($attendee->price_paid, 2) }}
+                                {{ formatPrice($attendee->price_paid) }}
                             </td>
+                            @if($event->transportation_enabled)
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                @if($attendee->transport_reserved)
+                                <span class="font-semibold text-cyan-800">Badge {{ $attendee->transport_badge_number }}</span><br><span class="text-xs text-cyan-700">Seat {{ $attendee->transport_seat_number }}</span>
+                                @else
+                                <span class="text-gray-400">Own transport</span>
+                                @endif
+                            </td>
+                            @endif
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($attendee->checked_in)
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
@@ -129,7 +152,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
+                            <td colspan="{{ $event->transportation_enabled ? 7 : 6 }}" class="px-6 py-12 text-center">
                                 <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                 </svg>

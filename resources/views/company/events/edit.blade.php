@@ -339,6 +339,44 @@
                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                                   placeholder="Details about parking availability">{{ old('parking_info', $event->parking_info) }}</textarea>
                     </div>
+
+                    @php
+                        $isVixensAndVelocity = str_contains(strtolower($event->title), 'vixens')
+                            && str_contains(strtolower($event->title), 'velocity');
+                        $defaultTransportDetails = 'Pickup points: Accra Mall – Ghud Park, UPSA Hostel, and Madina Zongo Junction. The Coaster may also pick up event-goers along the Oyarifa route where practical. Service runs from 4:00 PM to midnight for trips to and from the venue.';
+                    @endphp
+                    @if($isVixensAndVelocity)
+                    <div class="mt-5 rounded-xl border-2 border-cyan-200 bg-cyan-50 p-5">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <h3 class="font-bold text-cyan-950">Vixens and Velocity transport plan</h3>
+                                <p class="mt-1 text-sm text-cyan-800">Private checkout option for this event only. Attendees do not see seat capacity or reservation totals.</p>
+                            </div>
+                            <span class="rounded-full bg-cyan-600 px-3 py-1 text-xs font-bold text-white">Coaster Bus</span>
+                        </div>
+                        <input type="hidden" name="transportation_enabled" value="1">
+                        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Seats per bus badge</label>
+                                <input type="number" name="transport_seat_capacity" min="1" max="100" required
+                                       value="{{ old('transport_seat_capacity', $event->transport_seat_capacity ?? 30) }}"
+                                       class="w-full px-4 py-3 border border-cyan-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                                <p class="mt-1 text-xs text-cyan-800">Every 30 reservations starts a new badge / return trip.</p>
+                                @error('transport_seat_capacity')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Transport window</label>
+                                <div class="rounded-lg border border-cyan-200 bg-white px-4 py-3 text-sm text-cyan-950">4:00 PM – midnight, to and from Oyarifa</div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Pickup and route information</label>
+                            <textarea name="transport_pickup_details" rows="4"
+                                      class="w-full px-4 py-3 border border-cyan-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:outline-none">{{ old('transport_pickup_details', $event->transport_pickup_details ?: $defaultTransportDetails) }}</textarea>
+                            <p class="mt-1 text-xs text-cyan-800">This text is included in confirmations for attendees who reserve transport. Update it any time the route or pickup plan changes.</p>
+                        </div>
+                    </div>
+                    @endif
                 </div>
 
                 <!-- Online Fields -->
