@@ -26,7 +26,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Some shared hosts disable the process functions Composer needs for an
+        // autoload refresh. Load global presentation helpers explicitly so a
+        // deployment cannot leave Blade views calling an unavailable function.
+        $currencyHelper = app_path('Helpers/CurrencyHelper.php');
+
+        if (is_file($currencyHelper)) {
+            require_once $currencyHelper;
+        }
     }
 
     /**
