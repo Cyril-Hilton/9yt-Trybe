@@ -649,19 +649,9 @@ echo json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     <!-- Ticket Modal -->
     <div x-show="showTicketModal"
          x-cloak
-         class="fixed inset-0 z-50 overflow-y-auto"
+         class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-3 sm:p-6"
          @keydown.escape.window="showTicketModal = false">
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div x-show="showTicketModal"
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0"
-                 x-transition:enter-end="opacity-100"
-                 x-transition:leave="ease-in duration-200"
-                 x-transition:leave-start="opacity-100"
-                 x-transition:leave-end="opacity-0"
-                 class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75"
-                 @click="showTicketModal = false">
-            </div>
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" @click="showTicketModal = false"></div>
 
             <div x-show="showTicketModal"
                  x-transition:enter="ease-out duration-300"
@@ -670,7 +660,7 @@ echo json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                  x-transition:leave="ease-in duration-200"
                  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                 class="relative z-10 w-full max-w-2xl max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-2xl bg-white text-left shadow-2xl transform transition-all dark:bg-gray-800">
                 <form action="{{ route('events.checkout', $event->slug) }}" method="GET">
                     <div class="bg-white dark:bg-gray-800 px-6 pt-6 pb-4 transition-colors duration-300">
                         <div class="flex justify-between items-center mb-6">
@@ -760,7 +750,6 @@ echo json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                     </div>
                 </form>
             </div>
-        </div>
     </div>
     <!-- Booking Ride Picker Modal -->
     <div x-show="showBookingPicker" 
