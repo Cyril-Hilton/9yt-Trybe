@@ -226,51 +226,53 @@
             @endif
 
             <!-- Ticket Card -->
-            <div class="ticket-card" style="background: #ffffff; color: #1e293b;">
-                <h2 class="event-name">{{ $event->title }}</h2>
+            <!-- Use explicit dark colors here: Gmail mobile dark mode otherwise turns a
+                 white ticket card dark while retaining dark detail text. -->
+            <div class="ticket-card" style="background: #4f46e5; color: #ffffff;">
+                <h2 class="event-name" style="color: #ffffff;">{{ $event->title }}</h2>
 
-                <div class="ticket-details">
+                <div class="ticket-details" style="background: #3730a3; color: #ffffff;">
                     @if($event->start_date)
                         <div class="detail-row">
-                            <span class="detail-label">Event Date</span>
-                            <span class="detail-value">{{ $event->start_date->format('l, F d, Y') }}</span>
+                            <span class="detail-label" style="color: #dbeafe;">Event Date</span>
+                            <span class="detail-value" style="color: #ffffff;">{{ $event->start_date->format('l, F d, Y') }}</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Event Time</span>
-                            <span class="detail-value">{{ $event->start_date->format('g:i A') }}</span>
+                            <span class="detail-label" style="color: #dbeafe;">Event Time</span>
+                            <span class="detail-value" style="color: #ffffff;">{{ $event->start_date->format('g:i A') }}</span>
                         </div>
                     @endif
                     @if($event->location_type === 'venue' && $event->venue_name)
                         <div class="detail-row">
-                            <span class="detail-label">Venue</span>
-                            <span class="detail-value">{{ $event->venue_name }}</span>
+                            <span class="detail-label" style="color: #dbeafe;">Venue</span>
+                            <span class="detail-value" style="color: #ffffff;">{{ $event->venue_name }}</span>
                         </div>
                     @endif
                     <div class="detail-row">
-                        <span class="detail-label">Ticket Type</span>
-                        <span class="detail-value">{{ $attendee->ticket->name }}</span>
+                        <span class="detail-label" style="color: #dbeafe;">Ticket Type</span>
+                        <span class="detail-value" style="color: #ffffff;">{{ $attendee->ticket->name }}</span>
                     </div>
                     @if($attendee->ticket->price > 0)
                         <div class="detail-row">
-                            <span class="detail-label">Ticket Value</span>
-                            <span class="detail-value">{{ formatPrice($attendee->ticket->price) }}</span>
+                            <span class="detail-label" style="color: #dbeafe;">Ticket Value</span>
+                            <span class="detail-value" style="color: #ffffff;">{{ formatPrice($attendee->ticket->price) }}</span>
                         </div>
                     @endif
                     @if($attendee->transport_reserved && $attendee->transport_badge_number && $attendee->transport_seat_number)
                         <div class="detail-row">
-                            <span class="detail-label">Coaster Bus</span>
-                            <span class="detail-value">Badge {{ $attendee->transport_badge_number }}, Seat {{ $attendee->transport_seat_number }}</span>
+                            <span class="detail-label" style="color: #dbeafe;">Coaster Bus</span>
+                            <span class="detail-value" style="color: #ffffff;">Badge {{ $attendee->transport_badge_number }}, Seat {{ $attendee->transport_seat_number }}</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Service hours</span>
-                            <span class="detail-value">4:00 PM to midnight</span>
+                            <span class="detail-label" style="color: #dbeafe;">Service hours</span>
+                            <span class="detail-value" style="color: #ffffff;">4:00 PM to midnight</span>
                         </div>
                     @endif
                 </div>
 
                 @if($attendee->transport_reserved && $event->transport_pickup_details)
-                    <div style="margin: 18px 0 0; padding: 16px; border-radius: 10px; background: #eef2ff; color: #312e81; text-align: left;">
-                        <strong>Your private transport reservation</strong><br>
+                    <div style="margin: 18px 0 0; padding: 16px; border-radius: 10px; background: #312e81; color: #ffffff; text-align: left;">
+                        <strong style="color: #ffffff;">Your private transport reservation</strong><br>
                         Your Coaster assignment is Badge {{ $attendee->transport_badge_number }}, Seat {{ $attendee->transport_seat_number }}. {{ $event->transport_pickup_details }}
                     </div>
                 @endif
