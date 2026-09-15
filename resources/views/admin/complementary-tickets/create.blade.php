@@ -138,6 +138,17 @@
                             @enderror
                         </div>
 
+                        <div class="md:col-span-2 rounded-lg border border-indigo-100 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/30">
+                            <label class="flex items-start cursor-pointer">
+                                <input type="checkbox" name="transport_reserved" value="1" {{ old('transport_reserved') ? 'checked' : '' }}
+                                    class="mt-0.5 w-5 h-5 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500">
+                                <span class="ml-3 text-sm text-gray-700 dark:text-gray-200">
+                                    Reserve an optional transport seat for this guest
+                                    <span class="block mt-1 text-xs text-gray-500 dark:text-gray-400">Only applies when the selected event has enabled its own transport service. The guest receives their private badge and seat assignment by email.</span>
+                                </span>
+                            </label>
+                        </div>
+
                         <!-- Purpose -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

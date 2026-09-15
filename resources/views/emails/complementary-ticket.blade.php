@@ -253,10 +253,27 @@
                     @if($attendee->ticket->price > 0)
                         <div class="detail-row">
                             <span class="detail-label">Ticket Value</span>
-                            <span class="detail-value">GHS {{ number_format($attendee->ticket->price, 2) }}</span>
+                            <span class="detail-value">{{ formatPrice($attendee->ticket->price) }}</span>
+                        </div>
+                    @endif
+                    @if($attendee->transport_reserved && $attendee->transport_badge_number && $attendee->transport_seat_number)
+                        <div class="detail-row">
+                            <span class="detail-label">Coaster Bus</span>
+                            <span class="detail-value">Badge {{ $attendee->transport_badge_number }}, Seat {{ $attendee->transport_seat_number }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Service hours</span>
+                            <span class="detail-value">4:00 PM to midnight</span>
                         </div>
                     @endif
                 </div>
+
+                @if($attendee->transport_reserved && $event->transport_pickup_details)
+                    <div style="margin: 18px 0 0; padding: 16px; border-radius: 10px; background: #eef2ff; color: #312e81; text-align: left;">
+                        <strong>Your private transport reservation</strong><br>
+                        Your Coaster assignment is Badge {{ $attendee->transport_badge_number }}, Seat {{ $attendee->transport_seat_number }}. {{ $event->transport_pickup_details }}
+                    </div>
+                @endif
 
                 <!-- QR Code Section -->
                 <div class="qr-section">

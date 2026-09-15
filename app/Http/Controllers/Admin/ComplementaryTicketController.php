@@ -176,12 +176,15 @@ class ComplementaryTicketController extends Controller
             'purpose' => 'nullable|in:media,promoter,volunteer,influencer,student,sponsor,staff,other',
             'notes' => 'nullable|string|max:500',
             'visible_to_organizer' => 'nullable|boolean',
+            'transport_reserved' => 'nullable|boolean',
         ]);
 
         DB::beginTransaction();
         try {
             $admin = Auth::guard('admin')->user();
-            $event = Event::findOrFail($request->event_id);
+            // Lock the event while assigning a transport seat so concurrent
+            // complementary issues cannot receive the same badge/seat pair.
+            $event = Event::lockForUpdate()->findOrFail($request->event_id);
 
             $eventTicket = $this->findEventTicket($event, $request->ticket_type);
 
@@ -213,6 +216,11 @@ class ComplementaryTicketController extends Controller
                 $ticketCode = $this->ticketGenerator->generateTicketCode();
 
                 // Create attendee
+                $transportAssignment = $this->nextTransportAssignment(
+                    $event,
+                    $request->boolean('transport_reserved')
+                );
+
                 $attendee = EventAttendee::create([
                     'event_id' => $event->id,
                     'event_order_id' => null, // No order for complementary tickets
@@ -223,6 +231,9 @@ class ComplementaryTicketController extends Controller
                     'ticket_code' => $ticketCode,
                     'price_paid' => 0, // Complementary = free
                     'status' => 'valid',
+                    'transport_reserved' => $transportAssignment !== null,
+                    'transport_badge_number' => $transportAssignment['badge'] ?? null,
+                    'transport_seat_number' => $transportAssignment['seat'] ?? null,
                 ]);
 
                 // Generate QR code
@@ -759,5 +770,27 @@ class ComplementaryTicketController extends Controller
         return $ticketType === 'vip'
             ? $tickets->sortByDesc('price')->first()
             : $tickets->sortBy('price')->first();
+    }
+
+    /**
+     * Reserve the next private transport assignment for an event that has
+     * explicitly enabled transport. Capacity applies to each bus badge/trip.
+     */
+    private function nextTransportAssignment(Event $event, bool $requested): ?array
+    {
+        if (!$requested || !$event->transportation_enabled) {
+            return null;
+        }
+
+        $capacity = max(1, (int) $event->transport_seat_capacity);
+        $reservationCount = EventAttendee::query()
+            ->where('event_id', $event->id)
+            ->where('transport_reserved', true)
+            ->count();
+
+        return [
+            'badge' => intdiv($reservationCount, $capacity) + 1,
+            'seat' => ($reservationCount % $capacity) + 1,
+        ];
     }
 }
