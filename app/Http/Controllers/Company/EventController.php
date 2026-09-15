@@ -198,7 +198,9 @@ class EventController extends Controller
         $validated = $this->validateEventPayload($request);
         $tickets = $this->validatedTicketPayload($request, false);
 
-        DB::transaction(function () use ($validated, $event, $request, $tickets) {
+        $transportCapacityBeforeUpdate = $event->transport_seat_capacity;
+
+        DB::transaction(function () use ($validated, $event, $request, $tickets, $transportCapacityBeforeUpdate) {
             // Handle banner upload
             if ($request->hasFile('banner_image')) {
                 // Delete old banner
@@ -214,6 +216,11 @@ class EventController extends Controller
 
             // Update event
             $event->update($validated);
+
+            if (array_key_exists('transport_seat_capacity', $validated)
+                && (int) $transportCapacityBeforeUpdate !== (int) $event->transport_seat_capacity) {
+                $event->rebalanceTransportAssignments();
+            }
 
             // Sync categories
             if ($request->has('categories')) {

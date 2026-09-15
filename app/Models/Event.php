@@ -157,6 +157,30 @@ class Event extends Model
         return max(0, $this->transport_seat_capacity - $this->transport_seats_reserved);
     }
 
+    /**
+     * Reallocate private transport assignments when the vehicle size changes.
+     * Reservations retain their original confirmation order while badge and seat
+     * numbers are recalculated against the current seats-per-bus value.
+     */
+    public function rebalanceTransportAssignments(): void
+    {
+        if (!$this->transportation_enabled || !$this->transport_seat_capacity) {
+            return;
+        }
+
+        $capacity = max(1, (int) $this->transport_seat_capacity);
+        $this->transportReservations()
+            ->orderBy('id')
+            ->get()
+            ->values()
+            ->each(function (EventAttendee $attendee, int $index) use ($capacity) {
+                $attendee->update([
+                    'transport_badge_number' => intdiv($index, $capacity) + 1,
+                    'transport_seat_number' => ($index % $capacity) + 1,
+                ]);
+            });
+    }
+
     public function likes()
     {
         return $this->hasMany(EventLike::class);
