@@ -37,6 +37,11 @@ Schedule::command('sms:send-scheduled-campaigns')
         ->timezone(config('app.timezone'))
         ->withoutOverlapping();
 
+// Poll the official support mailbox once a minute for prompt, safe replies.
+Schedule::command('support:process-inbox')
+        ->everyMinute()
+        ->withoutOverlapping();
+
 // Schedule: Daily AI SEO refresh (events + polls)
 Schedule::command('seo:refresh --only-missing')
         ->dailyAt('02:30')

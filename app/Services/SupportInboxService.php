@@ -1,0 +1,99 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\SupportInboxMessage;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+
+class SupportInboxService
+{
+    public function process(): array
+    {
+        if (!config('services.support_inbox.enabled', false) || !function_exists('imap_open')) {
+            return ['processed' => 0, 'replied' => 0, 'escalated' => 0, 'reason' => 'Inbox monitoring is unavailable.'];
+        }
+
+        $mailbox = sprintf('{%s:%d/imap/ssl}INBOX', config('services.support_inbox.host'), config('services.support_inbox.port'));
+        $inbox = @imap_open($mailbox, config('services.support_inbox.username'), config('services.support_inbox.password'), OP_READONLY);
+        if ($inbox === false) {
+            Log::warning('Support inbox login failed.');
+            return ['processed' => 0, 'replied' => 0, 'escalated' => 0, 'reason' => 'Inbox login failed.'];
+        }
+
+        $uids = imap_search($inbox, 'UNSEEN', SE_UID) ?: [];
+        $result = ['processed' => 0, 'replied' => 0, 'escalated' => 0];
+
+        foreach ($uids as $uid) {
+            $overview = imap_fetch_overview($inbox, (string) $uid, FT_UID)[0] ?? null;
+            if (!$overview) continue;
+
+            $from = $this->address($overview->from ?? '');
+            if (!$from['email'] || strcasecmp($from['email'], (string) config('mail.from.address')) === 0) continue;
+
+            $messageId = trim((string) ($overview->message_id ?? 'imap-' . $uid . '-' . ($overview->udate ?? time())));
+            if (SupportInboxMessage::where('message_id', $messageId)->exists()) continue;
+
+            $subject = $this->decode((string) ($overview->subject ?? ''));
+            $body = Str::limit(trim(strip_tags((string) imap_body($inbox, (string) $uid, FT_UID))), 6000, '');
+            $classification = $this->classify($subject . "\n" . $body);
+            $message = SupportInboxMessage::create([
+                'message_id' => $messageId,
+                'from_email' => $from['email'],
+                'from_name' => $from['name'],
+                'subject' => $subject,
+                'body' => $body,
+                'classification' => $classification,
+                'status' => $classification === 'escalated' ? 'needs_review' : 'received',
+                'received_at' => isset($overview->udate) ? now()->setTimestamp((int) $overview->udate) : now(),
+            ]);
+            $result['processed']++;
+
+            if ($classification === 'escalated') {
+                $result['escalated']++;
+                continue;
+            }
+
+            $reply = $this->replyFor($classification, $from['name']);
+            Mail::raw($reply, function ($mail) use ($from, $subject, $messageId) {
+                $mail->to($from['email'])->subject($this->replySubject($subject));
+                $mail->getSymfonyMessage()->getHeaders()->addTextHeader('In-Reply-To', $messageId);
+                $mail->getSymfonyMessage()->getHeaders()->addTextHeader('References', $messageId);
+            });
+            $message->update(['status' => 'replied', 'reply_body' => $reply, 'replied_at' => now()]);
+            $result['replied']++;
+        }
+
+        imap_close($inbox);
+        return $result;
+    }
+
+    private function classify(string $text): string
+    {
+        $text = Str::lower($text);
+        if (preg_match('/refund|chargeback|payout|payment.*dispute|invoice|contract|agreement|lawsuit|legal|privacy|delete my data|hack|breach|fraud|abuse|harass/', $text)) return 'escalated';
+        if (preg_match('/demo|walkthrough|learn more|how.*work/', $text)) return 'demo';
+        if (preg_match('/price|pricing|charge|commission|fee/', $text)) return 'pricing';
+        if (preg_match('/free event|complimentary|rsvp/', $text)) return 'free_event';
+        if (preg_match('/qr|check.?in|ticket/', $text)) return 'ticketing';
+        return 'general';
+    }
+
+    private function replyFor(string $type, ?string $name): string
+    {
+        $greeting = 'Hello' . ($name ? ' ' . trim($name) : '') . ',';
+        $body = match ($type) {
+            'demo' => "Thank you for your interest. We would be happy to give you a short 9yt !Trybe walkthrough and help set up your first event. Please share the type of event you are planning and a convenient time, and our team will arrange the next step.",
+            'pricing' => "For paid tickets, 9yt !Trybe charges a 4% platform commission. Free events, complimentary tickets and RSVP registrations are GH₵0 and do not send attendees through a payment gateway.",
+            'free_event' => "Yes—free events, complimentary tickets and RSVP registrations can be set up at GH₵0, without a payment gateway step for attendees.",
+            'ticketing' => "9yt !Trybe lets organisers create ticket types, issue QR tickets, track registrations and scan attendees at entry. We can also help you set up your first event.",
+            default => "Thank you for contacting 9yt !Trybe. We have received your message and will help with the next step. Please share any relevant event details, such as the event type, date and expected audience, so we can guide you accurately.",
+        };
+        return "$greeting\n\n$body\n\nKind regards,\n9yt !Trybe Team\nsupport@9yttrybe.com\nhttps://9yttrybe.com";
+    }
+
+    private function replySubject(string $subject): string { return Str::startsWith(Str::lower($subject), 're:') ? $subject : 'Re: ' . $subject; }
+    private function decode(string $value): string { $decoded = imap_mime_header_decode($value); return collect($decoded)->pluck('text')->implode(''); }
+    private function address(string $value): array { $item = imap_rfc822_parse_adrlist($value, ''); $first = $item[0] ?? null; return ['email' => $first ? (($first->mailbox ?? '') . '@' . ($first->host ?? '')) : '', 'name' => $first?->personal ?? null]; }
+}

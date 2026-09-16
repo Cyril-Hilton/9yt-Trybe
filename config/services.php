@@ -18,6 +18,14 @@ return [
         'token' => env('POSTMARK_TOKEN'),
     ],
 
+    'support_inbox' => [
+        'enabled' => env('SUPPORT_INBOX_ENABLED', false),
+        'host' => env('SUPPORT_INBOX_HOST', env('MAIL_HOST')),
+        'port' => (int) env('SUPPORT_INBOX_PORT', 993),
+        'username' => env('SUPPORT_INBOX_USERNAME', env('MAIL_USERNAME')),
+        'password' => env('SUPPORT_INBOX_PASSWORD', env('MAIL_PASSWORD')),
+    ],
+
     'resend' => [
         'key' => env('RESEND_KEY'),
     ],
