@@ -35,7 +35,7 @@ class SupportInboxService
             if (!$overview) continue;
 
             $from = $this->address($overview->from ?? '');
-            if (!$from['email'] || strcasecmp($from['email'], (string) config('mail.from.address')) === 0) continue;
+            if (!$this->isCustomerSender($from['email'])) continue;
 
             $messageId = trim((string) ($overview->message_id ?? 'imap-' . $uid . '-' . ($overview->udate ?? time())));
             if (SupportInboxMessage::where('message_id', $messageId)->exists()) continue;
@@ -67,13 +67,18 @@ class SupportInboxService
             }
 
             $reply = $this->replyFor($classification, $from['name']);
-            Mail::raw($reply, function ($mail) use ($from, $subject, $messageId) {
-                $mail->to($from['email'])->subject($this->replySubject($subject));
-                $mail->getSymfonyMessage()->getHeaders()->addTextHeader('In-Reply-To', $messageId);
-                $mail->getSymfonyMessage()->getHeaders()->addTextHeader('References', $messageId);
-            });
-            $message->update(['status' => 'replied', 'reply_body' => $reply, 'replied_at' => now()]);
-            $result['replied']++;
+            try {
+                Mail::raw($reply, function ($mail) use ($from, $subject, $messageId) {
+                    $mail->to($from['email'])->subject($this->replySubject($subject));
+                    $mail->getSymfonyMessage()->getHeaders()->addTextHeader('In-Reply-To', $messageId);
+                    $mail->getSymfonyMessage()->getHeaders()->addTextHeader('References', $messageId);
+                });
+                $message->update(['status' => 'replied', 'reply_body' => $reply, 'replied_at' => now()]);
+                $result['replied']++;
+            } catch (\Throwable $exception) {
+                Log::warning('Support inbox reply failed.', ['message_id' => $messageId, 'error' => $exception->getMessage()]);
+                $message->update(['status' => 'reply_failed']);
+            }
         }
 
         imap_close($inbox);
@@ -106,5 +111,14 @@ class SupportInboxService
 
     private function replySubject(string $subject): string { return Str::startsWith(Str::lower($subject), 're:') ? $subject : 'Re: ' . $subject; }
     private function decode(string $value): string { $decoded = imap_mime_header_decode($value); return collect($decoded)->pluck('text')->implode(''); }
-    private function address(string $value): array { $item = imap_rfc822_parse_adrlist($value, ''); $first = $item[0] ?? null; return ['email' => $first ? (($first->mailbox ?? '') . '@' . ($first->host ?? '')) : '', 'name' => $first?->personal ?? null]; }
+    private function isCustomerSender(string $email): bool
+    {
+        $email = Str::lower(trim($email));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return false;
+        if (strcasecmp($email, (string) config('mail.from.address')) === 0) return false;
+        if (Str::endsWith($email, '@9yttrybe.com')) return false;
+        return !in_array(Str::before($email, '@'), ['mailer-daemon', 'postmaster', 'cpanel'], true);
+    }
+
+    private function address(string $value): array { $item = imap_rfc822_parse_adrlist($value, ''); $first = $item[0] ?? null; $email = $first ? (($first->mailbox ?? '') . '@' . ($first->host ?? '')) : ''; return ['email' => filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : '', 'name' => $first?->personal ?? null]; }
 }
