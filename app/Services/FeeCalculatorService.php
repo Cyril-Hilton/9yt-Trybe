@@ -21,6 +21,33 @@ class FeeCalculatorService
      */
     public function calculateFees(float $subtotal, int $ticketCount = 1, string $feeBearer = 'attendee'): array
     {
+        // A complimentary ticket is genuinely free. Never add a fixed gateway
+        // fee (or VAT on it) to a zero-price order, otherwise the checkout is
+        // incorrectly sent to Paystack for a few pesewas.
+        if ($subtotal <= 0) {
+            return [
+                'subtotal' => 0.0,
+                'ticket_count' => $ticketCount,
+                'payment_gateway_fee' => 0.0,
+                'vat' => 0.0,
+                'buyer_fees_total' => 0.0,
+                'total' => 0.0,
+                'platform_commission' => 0.0,
+                'platform_commission_rate' => 0.0,
+                'organizer_gross_revenue' => 0.0,
+                'organizer_net_payout' => 0.0,
+                'attendee_pays' => 0.0,
+                'organizer_fees' => 0.0,
+                'platform_fee' => 0.0,
+                'service_fee' => 0.0,
+                'processing_fee' => 0.0,
+                'fee_breakdown' => [
+                    'model' => 'complimentary',
+                    'buyer_pays_gateway_fees' => false,
+                ],
+            ];
+        }
+
         // Platform commission rate (charged to organizer from ticket revenue)
         // Default 4% - lowest in Ghana market (competitors charge 5-7.5%)
         $platformCommissionRate = PlatformSetting::get('platform_commission_rate', 4.0);
