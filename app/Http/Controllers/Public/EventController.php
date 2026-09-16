@@ -12,6 +12,7 @@ use App\Services\News\NewsService;
 use App\Services\SEO\AiLandingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use App\Services\SEO\AiTranslationService;
 
@@ -19,39 +20,46 @@ class EventController extends Controller
 {
     public function home(Request $request, NewsService $newsService)
     {
-        $query = Event::approved()->with(['company', 'tickets', 'categories']);
+        $cacheKey = 'home:events:' . md5(json_encode([
+            'region' => $request->input('region'),
+            'filter' => $request->input('filter'),
+        ]));
 
-        // Filter by region - if provided in request
-        if ($request->filled('region')) {
-            $query->where(function($q) use ($request) {
-                $q->where('region', $request->input('region'))
-                  ->orWhere('region', '')
-                  ->orWhereNull('region');
-            });
-        }
+        $events = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($request) {
+            $query = Event::approved()->with(['company', 'tickets', 'categories']);
 
-        // Filter by date range
-        if ($request->filled('filter')) {
-            $filter = $request->input('filter');
-            $now = now();
-
-            switch ($filter) {
-                case 'today':
-                    $query->whereDate('start_date', $now->toDateString());
-                    break;
-                case 'this_weekend':
-                    $startOfWeekend = $now->copy()->next('Saturday')->startOfDay();
-                    $endOfWeekend = $now->copy()->next('Sunday')->endOfDay();
-                    $query->whereBetween('start_date', [$startOfWeekend, $endOfWeekend]);
-                    break;
+            // Filter by region - if provided in request
+            if ($request->filled('region')) {
+                $query->where(function($q) use ($request) {
+                    $q->where('region', $request->input('region'))
+                      ->orWhere('region', '')
+                      ->orWhereNull('region');
+                });
             }
-        }
 
-        // Get upcoming events ordered by date - with eager loading
-        $events = $query->upcoming()
-            ->orderBy('start_date', 'asc')
-            ->limit(16)
-            ->get();
+            // Filter by date range
+            if ($request->filled('filter')) {
+                $filter = $request->input('filter');
+                $now = now();
+
+                switch ($filter) {
+                    case 'today':
+                        $query->whereDate('start_date', $now->toDateString());
+                        break;
+                    case 'this_weekend':
+                        $startOfWeekend = $now->copy()->next('Saturday')->startOfDay();
+                        $endOfWeekend = $now->copy()->next('Sunday')->endOfDay();
+                        $query->whereBetween('start_date', [$startOfWeekend, $endOfWeekend]);
+                        break;
+                }
+            }
+
+            // Get upcoming events ordered by date - with eager loading
+            return $query->upcoming()
+                ->orderBy('start_date', 'asc')
+                ->limit(16)
+                ->get();
+        });
 
         // 16 regions in Ghana
         $regions = [

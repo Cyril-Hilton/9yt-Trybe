@@ -1315,15 +1315,15 @@
         <!-- Section Header -->
         <div class="mb-8">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-                <div class="flex items-center space-x-4 mb-4 md:mb-0">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4 md:mb-0 min-w-0">
                     <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Browsing events in</h1>
-                    <form method="GET" action="/" class="relative">
+                    <form method="GET" action="/" class="relative w-full sm:w-auto">
                         @if(request('filter'))
                         <input type="hidden" name="filter" value="{{ request('filter') }}">
                         @endif
                         <select name="region"
                                 onchange="this.form.submit()"
-                                class="pl-10 pr-8 py-2 border-2 border-cyan-300 dark:border-cyan-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:outline-none transition-all hover-lift appearance-none">
+                                class="w-full sm:w-auto min-w-0 pl-10 pr-8 py-2 border-2 border-cyan-300 dark:border-cyan-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:outline-none transition-all hover-lift appearance-none">
                             <option value="">Choose a location</option>
                             @foreach($regions as $region)
                             <option value="{{ $region }}" {{ request('region') == $region ? 'selected' : '' }}>{{ $region }}</option>
@@ -1484,7 +1484,7 @@
                             @if($event->hasFreeTickets())
                                 <span class="text-green-600 dark:text-green-400">Free</span>
                             @elseif($event->cheapest_ticket_price > 0)
-                                <span class="text-gray-900 dark:text-white">From GH₵{{ number_format($event->cheapest_ticket_price, 2) }}</span>
+                                <span class="text-gray-900 dark:text-white">From {{ formatPrice($event->cheapest_ticket_price) }}</span>
                             @else
                                 <span class="text-gray-600 dark:text-gray-400">Price TBA</span>
                             @endif
@@ -2293,6 +2293,36 @@
                     });
                 },
 
+                venueCacheKey() {
+                    return `9yt:nearby-venues:v1:${this.selectedCategory}:${this.userLat.toFixed(2)}:${this.userLng.toFixed(2)}`;
+                },
+
+                restoreCachedVenues() {
+                    try {
+                        const cached = JSON.parse(localStorage.getItem(this.venueCacheKey()) || 'null');
+                        if (!cached || !Array.isArray(cached.places) || cached.expiresAt < Date.now()) {
+                            return false;
+                        }
+
+                        this.originalVenues = cached.places;
+                        this.applyFiltersAndSort();
+                        return true;
+                    } catch (_) {
+                        return false;
+                    }
+                },
+
+                cacheVenues(places) {
+                    try {
+                        localStorage.setItem(this.venueCacheKey(), JSON.stringify({
+                            places,
+                            expiresAt: Date.now() + (30 * 60 * 1000),
+                        }));
+                    } catch (_) {
+                        // Private browsing or quota limits should not affect discovery.
+                    }
+                },
+
                 openBookingPicker(venue) {
                     this.bookingRideFor = venue;
                     document.body.classList.add('overflow-hidden');
@@ -2565,14 +2595,15 @@
                 // No more IP-based geolocation - GPS only!
 
                 async loadVenues() {
-                    this.loading = true;
+                    const hasCachedVenues = this.restoreCachedVenues();
+                    this.loading = !hasCachedVenues;
                     this.errorMessage = '';
                     this.currentPage = 1; // Reset to first page
                     console.log(`🔍 Loading venues for: ${this.userCity} (${this.selectedCategory})`);
                     
                     try {
                         const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 20000);
+                        const timeoutId = setTimeout(() => controller.abort(), 6500);
                         const response = await fetch(`${window.location.origin}/api/nearby-venues?lat=${this.userLat}&lng=${this.userLng}&category=${this.selectedCategory}`, {
                             signal: controller.signal
                         });
@@ -2584,15 +2615,18 @@
 
                         const data = await response.json();
                         this.originalVenues = data.places || [];
+                        this.cacheVenues(this.originalVenues);
                         console.log(`✅ Loaded ${this.originalVenues.length} venues`);
                         this.applyFiltersAndSort();
                     } catch (error) {
                         console.error('❌ Failed to load venues:', error);
-                        this.originalVenues = [];
-                        this.venues = [];
-                        this.errorMessage = error && error.name === 'AbortError'
-                            ? 'Nearby venues request timed out. Please try again.'
-                            : 'We couldn\'t find any venues right now. Please try again in a moment!';
+                        if (!hasCachedVenues) {
+                            this.originalVenues = [];
+                            this.venues = [];
+                            this.errorMessage = error && error.name === 'AbortError'
+                                ? 'Nearby venues request timed out. Please try again.'
+                                : 'We couldn\'t find any venues right now. Please try again in a moment!';
+                        }
                     } finally {
                         this.loading = false;
                     }

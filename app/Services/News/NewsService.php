@@ -67,7 +67,13 @@ class NewsService
             return $cachedArticles;
         }
 
-        return $this->normalizeArticles($this->fetchLocalArticles($query));
+        // A cold shared cache should still be fast: serve a short-lived local cache
+        // instead of making every first visitor rebuild the database fallback.
+        $localCacheKey = 'news:homepage-local:' . Str::slug($query);
+
+        return Cache::remember($localCacheKey, now()->addMinutes(10), function () use ($query) {
+            return $this->normalizeArticles($this->fetchLocalArticles($query));
+        });
     }
 
     public function warmCache(?string $query = null): array

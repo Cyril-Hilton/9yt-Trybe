@@ -20,7 +20,9 @@ class NewsController extends Controller
         $articles = $this->newsService->getHomepageArticles($query ?: null);
         $aiDigest = null;
 
-        if ($request->wantsJson()) {
+        // Fetch calls commonly send Accept: */*. The route itself is the source
+        // of truth here, so API callers always receive lightweight JSON.
+        if ($request->wantsJson() || $request->is('api/*')) {
             return response()->json([
                 'query' => $query,
                 'count' => count($articles),

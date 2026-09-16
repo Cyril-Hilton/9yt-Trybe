@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\Client\Pool;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 
@@ -24,8 +25,10 @@ class NearbyVenuesController extends Controller
      */
     public function searchNearby(Request $request)
     {
-        // Increase execution time for this API call to handle multiple requests
-        set_time_limit(120);
+        // Nearby discovery must never make the page wait on a third-party map API.
+        // A short request budget plus cached/fallback results keeps this feature usable
+        // even when Overpass or Google Places is under load.
+        set_time_limit(12);
 
         if (!$this->mapsEnabled) {
             return response()->json([
@@ -52,12 +55,14 @@ class NearbyVenuesController extends Controller
             round($validated['lat'], 2),
             round($validated['lng'], 2),
             $validated['category'],
-            $validated['radius'] ?? 50000
+            $validated['radius'] ?? 15000
         );
 
         $cached = Cache::get($cacheKey);
         if ($cached) {
-            return response()->json($cached);
+            return response()
+                ->json($cached)
+                ->header('Cache-Control', 'public, max-age=900, stale-while-revalidate=3600');
         }
 
         if ($this->provider === 'google') {
@@ -75,9 +80,10 @@ class NearbyVenuesController extends Controller
         }
 
         $payload = $response->getData(true);
-        Cache::put($cacheKey, $payload, now()->addMinutes(15)); // Cache for 15 mins for OSM
+        // Keep a usable result (including a fallback) warm for the browser and server.
+        Cache::put($cacheKey, $payload, now()->addMinutes(30));
 
-        return $response;
+        return $response->header('Cache-Control', 'public, max-age=900, stale-while-revalidate=3600');
     }
 
     /**
@@ -87,8 +93,7 @@ class NearbyVenuesController extends Controller
     {
         $userLat = $params['lat'];
         $userLng = $params['lng'];
-        $radiusKm = ($params['radius'] ?? 50000) / 1000;
-        $radiusMeters = $params['radius'] ?? 50000;
+        $radiusMeters = $params['radius'] ?? 15000;
 
         // Map categories to OSM tags
         $tagConfigs = $this->getOSMTagConfigs($params['category']);
@@ -97,8 +102,6 @@ class NearbyVenuesController extends Controller
         $overpassServers = [
             'https://overpass-api.de/api/interpreter',
             'https://overpass.kumi.systems/api/interpreter',
-            'https://overpass.n.ey.pw/api/interpreter',
-            'https://overpass.be/api/interpreter'
         ];
 
         $allPlaces = [];
@@ -108,7 +111,7 @@ class NearbyVenuesController extends Controller
         foreach ($overpassServers as $overpassUrl) {
             try {
                 // Build Overpass QL query
-                $query = "[out:json][timeout:25];\n(\n";
+                $query = "[out:json][timeout:4];\n(\n";
                 foreach ($tagConfigs as $config) {
                     $tagValue = $config['value'];
                     $tagName = $config['name'];
@@ -118,7 +121,8 @@ class NearbyVenuesController extends Controller
                 }
                 $query .= ");\nout center;";
 
-                $response = Http::timeout(15)
+                $response = Http::connectTimeout(2)
+                    ->timeout(4)
                     ->when(app()->environment('local'), fn($h) => $h->withoutVerifying())
                     ->asForm()
                     ->post($overpassUrl, ['data' => $query]);
@@ -186,7 +190,8 @@ class NearbyVenuesController extends Controller
                 return response()->json([
                     'places' => $sortedPlaces,
                     'total_results' => count($sortedPlaces),
-                    'provider' => 'osm'
+                'provider' => 'osm',
+                'cached' => false,
                 ]);
 
             } catch (\Exception $e) {
@@ -204,7 +209,8 @@ class NearbyVenuesController extends Controller
         return response()->json([
             'places' => $fallbackVenues,
             'total_results' => count($fallbackVenues),
-            'provider' => 'fallback'
+            'provider' => 'fallback',
+            'cached' => false,
         ]);
     }
 
@@ -216,21 +222,38 @@ class NearbyVenuesController extends Controller
         $lastStatus = null;
         $lastErrorMessage = null;
 
-        foreach ($configs as $config) {
-            $url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
+        $url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+        $requests = array_map(function (array $config) use ($params) {
             $query = [
                 'location' => "{$params['lat']},{$params['lng']}",
-                'radius' => $params['radius'] ?? 50000,
+                'radius' => $params['radius'] ?? 15000,
                 'key' => $this->apiKey,
             ];
 
             if (isset($config['type'])) $query['type'] = $config['type'];
             if (isset($config['keyword'])) $query['keyword'] = $config['keyword'];
 
-            try {
-                $response = Http::timeout(8) // Set 8s timeout per request
-                    ->when(app()->environment('local'), fn($h) => $h->withoutVerifying())
-                    ->get($url, $query);
+            return $query;
+        }, $configs);
+
+        try {
+            // Categories may have several useful Google searches. Run them concurrently
+            // so a broader result set does not multiply the time the user waits.
+            $responses = Http::pool(function (Pool $pool) use ($requests, $url) {
+                return array_map(function (array $query) use ($pool, $url) {
+                    $request = $pool->connectTimeout(1)->timeout(3);
+                    if (app()->environment('local')) {
+                        $request = $request->withoutVerifying();
+                    }
+
+                    return $request->get($url, $query);
+                }, $requests);
+            });
+
+            foreach ($responses as $response) {
+                if (!$response instanceof \Illuminate\Http\Client\Response) {
+                    continue;
+                }
                 
                 if ($response->successful()) {
                     $payload = $response->json();
@@ -271,10 +294,10 @@ class NearbyVenuesController extends Controller
                         }
                     }
                 }
-            } catch (\Exception $e) {
-                \Log::error('Google Places Error: ' . $e->getMessage());
-                $lastErrorMessage = $e->getMessage();
             }
+        } catch (\Throwable $e) {
+            \Log::warning('Google Places Error: ' . $e->getMessage());
+            $lastErrorMessage = $e->getMessage();
         }
 
         $sortedPlaces = collect($allPlaces)->sortBy('distance_km')->values()->toArray();
