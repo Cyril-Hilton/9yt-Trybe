@@ -1484,7 +1484,7 @@
                             @if($event->hasFreeTickets())
                                 <span class="text-green-600 dark:text-green-400">Free</span>
                             @elseif($event->cheapest_ticket_price > 0)
-                                <span class="text-gray-900 dark:text-white">From {{ formatPrice($event->cheapest_ticket_price) }}</span>
+                                <span class="text-gray-900 dark:text-white">From GH₵{{ number_format($event->cheapest_ticket_price, 2) }}</span>
                             @else
                                 <span class="text-gray-600 dark:text-gray-400">Price TBA</span>
                             @endif
