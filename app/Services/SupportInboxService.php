@@ -27,7 +27,9 @@ class SupportInboxService
             return ['processed' => 0, 'replied' => 0, 'escalated' => 0, 'baselined' => 0, 'reason' => 'Inbox login failed.'];
         }
 
-        $uids = imap_search($inbox, 'UNSEEN', SE_UID) ?: [];
+        // A mail client can mark a message as read before the next scheduler pass.
+        // Search the recent mailbox window and rely on message-ID deduplication instead.
+        $uids = array_slice(imap_search($inbox, 'ALL', SE_UID) ?: [], -100);
         $result = ['processed' => 0, 'replied' => 0, 'escalated' => 0, 'baselined' => 0];
 
         foreach ($uids as $uid) {
