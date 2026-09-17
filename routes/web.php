@@ -156,10 +156,10 @@ Route::get('/polls/{slug}', [App\Http\Controllers\Public\PollController::class, 
 
 // Event Ticket Purchase & Checkout (REQUIRES LOGIN - No guest checkout allowed!)
 Route::get('/events/{slug}/checkout', [App\Http\Controllers\Public\EventCheckoutController::class, 'show'])
-    ->middleware(['auth', 'verified']) // Must be logged in + verified to checkout
+    ->middleware('auth') // Login is required; email verification must not block ticket purchases.
     ->name('events.checkout');
 Route::post('/events/{slug}/checkout', [App\Http\Controllers\Public\EventCheckoutController::class, 'processOrder'])
-    ->middleware(['auth', 'verified', 'throttle:10,1']) // Must be logged in + verified + rate limiting
+    ->middleware(['auth', 'throttle:10,1']) // Keep login and rate limiting without blocking unverified attendees.
     ->name('events.checkout.process');
 Route::get('/events/orders/{orderNumber}', [App\Http\Controllers\Public\EventCheckoutController::class, 'confirmation'])
     ->name('events.order.confirmation');
